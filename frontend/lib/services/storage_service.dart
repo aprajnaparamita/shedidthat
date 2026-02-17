@@ -51,6 +51,10 @@ class StorageService {
 
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final index = prefs.getStringList(_indexKey) ?? [];
+    for (final id in index) {
+      await prefs.remove(id);
+    }
+    await prefs.remove(_indexKey);
   }
 }

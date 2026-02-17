@@ -2,11 +2,29 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'services/device_service.dart';
 import 'theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DeviceService.registerDevice();
-  runApp(const MyApp());
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://12b7eb577913149a1ca8b5054a46db9d@o4509949000482816.ingest.us.sentry.io/4510902247686144';
+      // Adds request headers and IP for users, for more info visit:
+      // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
+      options.sendDefaultPii = true;
+      options.enableLogs = true;
+      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+      // We recommend adjusting this value in production.
+      options.tracesSampleRate = 1.0;
+      // The sampling rate for profiling is relative to tracesSampleRate
+      // Setting to 1.0 will profile 100% of sampled transactions:
+      options.profilesSampleRate = 1.0;
+    },
+    appRunner: () => runApp(SentryWidget(child: const MyApp())),
+  );
+  // TODO: Remove this line after sending the first sample event to sentry.
+  await Sentry.captureException(StateError('This is a sample exception.'));
 }
 
 class MyApp extends StatelessWidget {

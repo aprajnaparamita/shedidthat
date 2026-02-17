@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -7,25 +6,26 @@ class AppTheme {
     return ThemeData(
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
+      fontFamily: 'Lato',
       colorScheme: ColorScheme.fromSwatch().copyWith(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         background: AppColors.background,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        titleTextStyle: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold),
+        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
-      textTheme: TextTheme(
-        headlineMedium: GoogleFonts.lato(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-        bodyMedium: GoogleFonts.lato(fontSize: 16, color: Colors.black87),
-        labelSmall: GoogleFonts.lato(fontSize: 12, color: Colors.grey),
+      textTheme: const TextTheme(
+        headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+        bodyMedium: TextStyle(fontSize: 16, color: Colors.black87),
+        labelSmall: TextStyle(fontSize: 12, color: Colors.grey),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        hintStyle: GoogleFonts.lato(color: Colors.grey),
+        hintStyle: const TextStyle(color: Colors.grey),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
@@ -45,10 +45,11 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    return ThemeData.dark().copyWith(
+    final darkBase = ThemeData.dark();
+    return darkBase.copyWith(
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: Colors.grey[900],
-      colorScheme: ColorScheme.fromSwatch().copyWith(
+      colorScheme: darkBase.colorScheme.copyWith(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         brightness: Brightness.dark,
@@ -56,17 +57,17 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.grey[850],
         foregroundColor: Colors.white,
-        titleTextStyle: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold),
+        titleTextStyle: const TextStyle(fontFamily: 'Lato', fontSize: 20, fontWeight: FontWeight.bold),
       ),
-      textTheme: TextTheme(
-        headlineMedium: GoogleFonts.lato(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        bodyMedium: GoogleFonts.lato(fontSize: 16, color: Colors.white70),
-        labelSmall: GoogleFonts.lato(fontSize: 12, color: Colors.grey[400]),
+      textTheme: darkBase.textTheme.apply(fontFamily: 'Lato').copyWith(
+        headlineMedium: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+        bodyMedium: const TextStyle(fontSize: 16, color: Colors.white70),
+        labelSmall: TextStyle(fontSize: 12, color: Colors.grey[400]),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.grey[800],
-        hintStyle: GoogleFonts.lato(color: Colors.grey[400]),
+        hintStyle: TextStyle(color: Colors.grey[400]),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,

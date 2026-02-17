@@ -44,22 +44,33 @@ class DeviceService {
 
     if (!alreadyRegistered) {
       final token = await getDeviceToken();
-      const baseUrl = kDebugMode ? 'http://localhost:8080' : 'https://api.shedidthat.app';
+      const baseUrl = kDebugMode ? 'http://127.0.0.1:8080' : 'https://api.shedidthat.app';
+      final url = Uri.parse('$baseUrl/register');
+      print('[DeviceService] Attempting to register device at $url');
 
       try {
         final response = await http.post(
-          Uri.parse('$baseUrl/register'),
+          url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'deviceToken': token}),
         );
 
         if (response.statusCode == 200) {
           await prefs.setBool(_deviceRegisteredKey, true);
+          print('[DeviceService] Device registration successful.');
+        } else {
+          print('[DeviceService] Device registration failed with status: ${response.statusCode}');
+          print('[DeviceService] Response body: ${response.body}');
         }
       } catch (e) {
         // Handle registration error, maybe retry later
-        print('Device registration failed: $e');
+        print('[DeviceService] Device registration failed with exception: $e');
       }
     }
+  }
+  static Future<void> clearRegistration() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_deviceRegisteredKey);
+    print('[DeviceService] Device registration cleared.');
   }
 }

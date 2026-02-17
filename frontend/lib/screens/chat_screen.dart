@@ -42,24 +42,28 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _startNewConversation() async {
-    setState(() {
-      _isLoading = true;
-    });
     _conversationId = await _storageService.newConversation();
-    await _sendMessage(isInitialMessage: true);
+    final welcomeMessage = Message(
+      role: 'assistant',
+      content:
+          "Hey! So glad you're here. Just a heads-up, our chats are saved right here on your device, so your secrets are safe with you. I won't remember them next time. Now, what's on your mind?",
+      timestamp: DateTime.now(),
+    );
+    setState(() {
+      _messages = [welcomeMessage];
+    });
+    await _storageService.saveConversation(_conversationId!, _messages);
   }
 
-  Future<void> _sendMessage({bool isInitialMessage = false}) async {
-    final text = _controller.text;
-    if (text.isEmpty && !isInitialMessage) return;
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
 
     _controller.clear();
     final userMessage = Message(role: 'user', content: text, timestamp: DateTime.now());
 
     setState(() {
-      if (!isInitialMessage) {
-        _messages.add(userMessage);
-      }
+      _messages.add(userMessage);
       _isLoading = true;
     });
 

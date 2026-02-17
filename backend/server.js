@@ -2,6 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { Anthropic } = require('@anthropic-ai/sdk');
+// Import with `import * as Sentry from "@sentry/node"` if you are using ESM
+const Sentry = require("@sentry/node");
+
+Sentry.init({
+  dsn: process.env.SENTRY_API_KEY,
+  // Setting this option to true will send default PII data to Sentry.
+  // For example, automatic IP address collection on events
+  sendDefaultPii: true,
+});
+
 
 if (process.env.NODE_ENV === 'test') {
   require('dotenv').config({ path: '.env.test' });
@@ -23,10 +33,22 @@ const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'persona.md'), 'utf8'
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] Received ${req.method} request for ${req.url}`);
+  console.log('Request Headers:', req.headers);
+  next();
+});
+
 // App secret middleware
 const appSecretMiddleware = (req, res, next) => {
-  const appSecret = req.get('x-app-secret');
-  if (appSecret !== process.env.APP_SECRET) {
+  const receivedSecret = req.get('x-app-secret');
+  const serverSecret = process.env.APP_SECRET;
+  console.log(`[Server] Received Secret: ${receivedSecret.substring(0, 10)}...`);
+  console.log(`[Server] Server Secret:   ${serverSecret.substring(0, 10)}...`);
+  console.log(`[Server] Secrets Match: ${receivedSecret === serverSecret}`);
+
+  if (receivedSecret !== serverSecret) {
     return res.status(401).json({ error: 'Nope.' });
   }
   next();
@@ -63,16 +85,20 @@ app.get('/health', (req, res) => res.json({ status: 'Jess is ready and waiting' 
 
 // Register device
 app.post('/register', (req, res) => {
+  console.log('[Server] /register endpoint hit');
   const { deviceToken } = req.body;
   if (!deviceToken) {
+    console.log('[Server] Registration failed: deviceToken missing.');
     return res.status(400).json({ error: 'deviceToken required' });
   }
   registeredDevices.add(deviceToken);
+  console.log(`[Server] Device ${deviceToken.substring(0, 10)}... registered.`);
   res.status(200).json({ status: 'Device registered' });
 });
 
 // Main chat endpoint
 app.post('/chat', async (req, res) => {
+  console.log('[Server] /chat endpoint hit');
   const deviceToken = req.get('x-device-token');
   const currentUsage = usageTracker.get(deviceToken) || 0;
 
