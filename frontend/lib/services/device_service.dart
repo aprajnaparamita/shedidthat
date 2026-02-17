@@ -1,0 +1,65 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:crypto/crypto.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
+class DeviceService {
+  static const _deviceTokenKey = 'device_token';
+  static const _deviceRegisteredKey = 'device_registered';
+
+  static Future<String> getDeviceToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString(_deviceTokenKey);
+
+    if (token == null) {
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceId;
+      try {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          final androidInfo = await deviceInfo.androidInfo;
+          deviceId = androidInfo.id;
+        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          deviceId = iosInfo.identifierForVendor!;
+        } else {
+          deviceId = 'unknown_platform';
+        }
+      } catch (e) {
+        deviceId = 'error_getting_id';
+      }
+
+      final bytes = utf8.encode('she-absolutely:' + deviceId);
+      token = sha256.convert(bytes).toString();
+      await prefs.setString(_deviceTokenKey, token);
+    }
+
+    return token;
+  }
+
+  static Future<void> registerDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool alreadyRegistered = prefs.getBool(_deviceRegisteredKey) ?? false;
+
+    if (!alreadyRegistered) {
+      final token = await getDeviceToken();
+      const baseUrl = kDebugMode ? 'http://localhost:8080' : 'https://api.shedidthat.app';
+
+      try {
+        final response = await http.post(
+          Uri.parse('$baseUrl/register'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'deviceToken': token}),
+        );
+
+        if (response.statusCode == 200) {
+          await prefs.setBool(_deviceRegisteredKey, true);
+        }
+      } catch (e) {
+        // Handle registration error, maybe retry later
+        print('Device registration failed: $e');
+      }
+    }
+  }
+}

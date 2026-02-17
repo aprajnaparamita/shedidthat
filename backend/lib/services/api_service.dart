@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://she-absolutely-just-did-that-api.fly.dev';
+  static const String _baseUrl = 'http://localhost:8080';
   static const String _appSecret = 'REPLACE_WITH_YOUR_SECRET'; // TODO: Replace with your actual secret
 
   static Future<String> sendMessage(List<Message> messages, String deviceToken) async {
