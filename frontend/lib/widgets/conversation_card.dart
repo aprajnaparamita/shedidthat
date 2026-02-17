@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:shedidthat/theme/app_colors.dart';
 
 class ConversationCard extends StatelessWidget {
   final String title;
@@ -17,20 +17,41 @@ class ConversationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key(title),
-      onDismissed: (direction) => onDelete(),
-      background: Container(color: Colors.red),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: ListTile(
-          leading: const VerticalDivider(
-            color: AppColors.primary,
-            thickness: 4,
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.primaryText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      time,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.secondaryText),
+                onPressed: onDelete,
+              ),
+            ],
           ),
-          title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-          subtitle: Text(time, style: Theme.of(context).textTheme.labelSmall),
-          onTap: onTap,
         ),
       ),
     );

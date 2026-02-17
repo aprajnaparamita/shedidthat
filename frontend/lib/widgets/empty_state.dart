@@ -12,11 +12,6 @@ class EmptyState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            '🤫',
-            style: TextStyle(fontSize: 64),
-          ),
-          const SizedBox(height: 16),
-          Text(
             'No debriefs yet.',
             style: Theme.of(context).textTheme.headlineMedium,
           ),

@@ -10,44 +10,60 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    return Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: [
-        if (!isUser)
-          const CircleAvatar(
-            backgroundColor: AppColors.primary,
-            child: Text('J', style: TextStyle(color: Colors.white)),
+
+    if (isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          decoration: BoxDecoration(
+            gradient: AppColors.userBubbleGradient,
+            borderRadius: BorderRadius.circular(20),
           ),
-        Flexible(
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: isUser ? AppColors.userBubbleGradient : null,
-              color: isUser ? null : AppColors.jessBubble,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  message.content,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isUser ? Colors.white : Colors.black,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${message.timestamp.hour}:${message.timestamp.minute}',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isUser ? Colors.white70 : Colors.black54,
-                      ),
-                ),
-              ],
+          child: Text(
+            message.content,
+            style: const TextStyle(
+              color: AppColors.userBubbleText,
             ),
           ),
         ),
-      ],
+      );
+    }
+
+    // Jess's bubble with avatar
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/jess.png',
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.jessBubbleBackground,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.jessBubbleBorder, width: 1),
+              ),
+              child: Text(
+                message.content,
+                style: const TextStyle(
+                  color: AppColors.jessBubbleText,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

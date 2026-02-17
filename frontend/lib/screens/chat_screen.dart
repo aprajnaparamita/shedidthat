@@ -3,6 +3,7 @@ import '../models/message.dart';
 import '../services/api_service.dart';
 import '../services/device_service.dart';
 import '../services/storage_service.dart';
+import '../theme/app_colors.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/jess_typing_indicator.dart';
 
@@ -46,7 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final welcomeMessage = Message(
       role: 'assistant',
       content:
-          "Hey! So glad you're here. Just a heads-up, our chats are saved right here on your device, so your secrets are safe with you. I won't remember them next time. Now, what's on your mind?",
+          "Hey bestie! So glad you're here. What's on your mind?",
       timestamp: DateTime.now(),
     );
     setState(() {
@@ -92,6 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+                  backgroundColor: AppColors.screenBackground,
       appBar: AppBar(
         title: const Text('Debrief'),
       ),

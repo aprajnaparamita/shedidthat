@@ -54,59 +54,84 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('She Absolutely Just Did That'),
-      ),
-      body: Column(
-        children: [
-          if (kDebugMode)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextButton(
-                onPressed: () async {
-                  await _storageService.clearAll();
-                  await DeviceService.clearRegistration();
-                  // Reload the state to reflect the changes
-                  _loadConversations();
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content:
-                          Text('App state cleared! Please restart the app.'),
-                    ),
-                  );
-                },
-                child: const Text('Reset State (Debug Only)'),
-              ),
-            ),
-          Expanded(
-            child: _conversationIds.isEmpty
-                ? EmptyState(onButtonPressed: _startNewConversation)
-                : ListView.builder(
-                    itemCount: _conversationIds.length,
-                    itemBuilder: (context, index) {
-                      final conversationId = _conversationIds[index];
-                      return FutureBuilder<String>(
-                        future: _storageService
-                            .getConversationPreview(conversationId),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-                          return ConversationCard(
-                            title: snapshot.data ?? '',
-                            time: 'just now', // Replace with actual time logic
-                            onTap: () => _openConversation(conversationId),
-                            onDelete: () => _deleteConversation(conversationId),
-                          );
-                        },
+
+      body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+
+              Widget headerImage;
+              if (isMobile) {
+                headerImage = Image.asset(
+                  'assets/header.png',
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                );
+              } else {
+                // For tablets/desktops, make it slightly larger
+                final headerHeight = constraints.maxHeight * 0.45;
+                headerImage = SizedBox(
+                  height: headerHeight,
+                  child: Image.asset(
+                    'assets/header.png',
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                  headerImage,
+              if (kDebugMode)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextButton(
+                    onPressed: () async {
+                      await _storageService.clearAll();
+                      await DeviceService.clearRegistration();
+                      // Reload the state to reflect the changes
+                      _loadConversations();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('App state cleared! Please restart the app.'),
+                        ),
                       );
                     },
+                    child: const Text('Reset State (Debug Only)'),
                   ),
-          ),
-        ],
+                ),
+              Expanded(
+                child: _conversationIds.isEmpty
+                    ? EmptyState(onButtonPressed: _startNewConversation)
+                    : ListView.builder(
+                        itemCount: _conversationIds.length,
+                        itemBuilder: (context, index) {
+                          final conversationId = _conversationIds[index];
+                          return FutureBuilder<String>(
+                            future: _storageService
+                                .getConversationPreview(conversationId),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              return ConversationCard(
+                                title: snapshot.data ?? '',
+                                time: 'just now', // Replace with actual time logic
+                                onTap: () => _openConversation(conversationId),
+                                onDelete: () => _deleteConversation(conversationId),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _startNewConversation,

@@ -31,15 +31,19 @@ class _JessTypingIndicatorState extends State<JessTypingIndicator>
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(
-          backgroundColor: AppColors.primary,
-          child: Text('J', style: TextStyle(color: Colors.white)),
-        ),
+        ClipOval(
+            child: Image.asset(
+              'assets/jess.png',
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+            ),
+          ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.jessBubble,
+            color: AppColors.jessBubbleBackground,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(

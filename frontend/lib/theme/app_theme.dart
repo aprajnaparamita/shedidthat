@@ -2,87 +2,94 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
-    return ThemeData(
+  static ThemeData get darkTheme {
+    final darkBase = ThemeData.dark();
+    return darkBase.copyWith(
       primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: AppColors.background,
-      fontFamily: 'Lato',
-      colorScheme: ColorScheme.fromSwatch().copyWith(
+      scaffoldBackgroundColor: AppColors.screenBackground,
+      colorScheme: darkBase.colorScheme.copyWith(
         primary: AppColors.primary,
         secondary: AppColors.accent,
-        background: AppColors.background,
+        background: AppColors.screenBackground,
+        surface: AppColors.cardBubbleBackground,
+        error: AppColors.error,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.mainBackground,
+        elevation: 0,
+        titleTextStyle: const TextStyle(
+          fontFamily: 'Lato',
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primaryText,
+        ),
+        iconTheme: const IconThemeData(color: AppColors.primaryText),
       ),
-      textTheme: const TextTheme(
-        headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-        bodyMedium: TextStyle(fontSize: 16, color: Colors.black87),
-        labelSmall: TextStyle(fontSize: 12, color: Colors.grey),
-      ),
+      textTheme: darkBase.textTheme.apply(fontFamily: 'Lato').copyWith(
+            headlineMedium: darkBase.textTheme.headlineMedium?.copyWith(
+              color: AppColors.primaryText,
+            ),
+            bodyMedium: darkBase.textTheme.bodyMedium?.copyWith(
+              color: AppColors.primaryText,
+            ),
+            titleMedium: darkBase.textTheme.titleMedium?.copyWith(
+              color: AppColors.secondaryText,
+            ),
+            labelSmall: darkBase.textTheme.labelSmall?.copyWith(
+              color: AppColors.tertiaryText, // For timestamps
+            ),
+          ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
-        hintStyle: const TextStyle(color: Colors.grey),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+        fillColor: AppColors.inputFieldBackground,
+        hintStyle: const TextStyle(color: AppColors.inputPlaceholder),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(30.0)),
+          borderSide: BorderSide(color: AppColors.inputFieldBorder, width: 1.0),
         ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(30.0)),
+          borderSide: BorderSide(color: AppColors.inputFieldBorderFocus, width: 2.0),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.buttonPrimary,
+        foregroundColor: AppColors.buttonPrimaryText,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.buttonPrimary,
+          foregroundColor: AppColors.buttonPrimaryText,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(30.0),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.secondaryText,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.divider,
+        thickness: 1,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.cardBubbleBackground,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
         ),
       ),
     );
   }
 
-  static ThemeData get darkTheme {
-    final darkBase = ThemeData.dark();
-    return darkBase.copyWith(
+  // Keeping light theme for completeness, but it's not currently used.
+  static ThemeData get lightTheme {
+    return ThemeData(
       primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: Colors.grey[900],
-      colorScheme: darkBase.colorScheme.copyWith(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        brightness: Brightness.dark,
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.grey[850],
-        foregroundColor: Colors.white,
-        titleTextStyle: const TextStyle(fontFamily: 'Lato', fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-      textTheme: darkBase.textTheme.apply(fontFamily: 'Lato').copyWith(
-        headlineMedium: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        bodyMedium: const TextStyle(fontSize: 16, color: Colors.white70),
-        labelSmall: TextStyle(fontSize: 12, color: Colors.grey[400]),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[800],
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-        ),
-      ),
+      scaffoldBackgroundColor: Colors.white,
+      // Define other light theme properties if needed in the future
     );
   }
 }

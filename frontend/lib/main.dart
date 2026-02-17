@@ -34,8 +34,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'She Absolutely Just Did That',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.darkTheme,
+      darkTheme: AppTheme.darkTheme, // Optional: Explicitly set dark theme
+      themeMode: ThemeMode.dark, // Enforce dark mode
       home: const HomeScreen(),
     );
   }
