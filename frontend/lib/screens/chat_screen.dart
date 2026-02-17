@@ -43,7 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _startNewConversation() async {
-    _conversationId = await _storageService.newConversation();
+    // Don't create an ID or save until the first message is sent.
     final welcomeMessage = Message(
       role: 'assistant',
       content:
@@ -53,7 +53,6 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages = [welcomeMessage];
     });
-    await _storageService.saveConversation(_conversationId!, _messages);
   }
 
   Future<void> _sendMessage() async {
@@ -62,6 +61,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _controller.clear();
     final userMessage = Message(role: 'user', content: text, timestamp: DateTime.now());
+
+    // If this is the first message, create the conversation now.
+    if (_conversationId == null) {
+      _conversationId = await _storageService.newConversation();
+    }
 
     setState(() {
       _messages.add(userMessage);

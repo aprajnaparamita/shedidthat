@@ -2,16 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { Anthropic } = require('@anthropic-ai/sdk');
-// Import with `import * as Sentry from "@sentry/node"` if you are using ESM
+const { MongoClient } = require('mongodb');
 const Sentry = require("@sentry/node");
 
 Sentry.init({
   dsn: process.env.SENTRY_API_KEY,
-  // Setting this option to true will send default PII data to Sentry.
-  // For example, automatic IP address collection on events
   sendDefaultPii: true,
 });
-
 
 if (process.env.NODE_ENV === 'test') {
   require('dotenv').config({ path: '.env.test' });
@@ -22,8 +19,24 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const registeredDevices = new Set();
+const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// MongoDB setup
+const mongoClient = new MongoClient(process.env.MONGODB_URI);
+let devicesCollection;
+
+async function connectToDb() {
+  try {
+    await mongoClient.connect();
+    const database = mongoClient.db('SheDidThat'); // You can name your DB here
+    devicesCollection = database.collection('devices');
+    console.log('Successfully connected to MongoDB Atlas.');
+  } catch (error) {
+    console.error('Failed to connect to MongoDB', error);
+    process.exit(1);
+  }
+}
+
 const usageTracker = new Map();
 
 // Load persona once at startup
@@ -36,7 +49,6 @@ app.use(express.json());
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] Received ${req.method} request for ${req.url}`);
-  console.log('Request Headers:', req.headers);
   next();
 });
 
@@ -44,10 +56,6 @@ app.use((req, res, next) => {
 const appSecretMiddleware = (req, res, next) => {
   const receivedSecret = req.get('x-app-secret');
   const serverSecret = process.env.APP_SECRET;
-  console.log(`[Server] Received Secret: ${receivedSecret.substring(0, 10)}...`);
-  console.log(`[Server] Server Secret:   ${serverSecret.substring(0, 10)}...`);
-  console.log(`[Server] Secrets Match: ${receivedSecret === serverSecret}`);
-
   if (receivedSecret !== serverSecret) {
     return res.status(401).json({ error: 'Nope.' });
   }
@@ -56,12 +64,18 @@ const appSecretMiddleware = (req, res, next) => {
 app.use('/chat', appSecretMiddleware);
 
 // Device token middleware
-const deviceTokenMiddleware = (req, res, next) => {
+const deviceTokenMiddleware = async (req, res, next) => {
   const deviceToken = req.get('x-device-token');
-  if (!registeredDevices.has(deviceToken)) {
-    return res.status(401).json({ error: 'Nope.' });
+  try {
+    const device = await devicesCollection.findOne({ deviceToken });
+    if (!device) {
+      return res.status(401).json({ error: 'Nope.' });
+    }
+    next();
+  } catch (error) {
+    console.error('Error validating device token:', error);
+    return res.status(500).json({ error: 'Server error during authentication.' });
   }
-  next();
 };
 app.use('/chat', deviceTokenMiddleware);
 
@@ -84,21 +98,27 @@ app.use('/chat', dailyLimiter);
 app.get('/health', (req, res) => res.json({ status: 'Jess is ready and waiting' }));
 
 // Register device
-app.post('/register', (req, res) => {
-  console.log('[Server] /register endpoint hit');
+app.post('/register', async (req, res) => {
   const { deviceToken } = req.body;
   if (!deviceToken) {
-    console.log('[Server] Registration failed: deviceToken missing.');
     return res.status(400).json({ error: 'deviceToken required' });
   }
-  registeredDevices.add(deviceToken);
-  console.log(`[Server] Device ${deviceToken.substring(0, 10)}... registered.`);
-  res.status(200).json({ status: 'Device registered' });
+  try {
+    const existingDevice = await devicesCollection.findOne({ deviceToken });
+    if (existingDevice) {
+      return res.status(200).json({ status: 'Device already registered' });
+    }
+    await devicesCollection.insertOne({ deviceToken, createdAt: new Date() });
+    console.log(`[Server] Device ${deviceToken.substring(0, 10)}... registered in DB.`);
+    res.status(200).json({ status: 'Device registered' });
+  } catch (error) {
+    console.error('Error during device registration:', error);
+    res.status(500).json({ error: 'Could not register device.' });
+  }
 });
 
 // Main chat endpoint
 app.post('/chat', async (req, res) => {
-  console.log('[Server] /chat endpoint hit');
   const deviceToken = req.get('x-device-token');
   const currentUsage = usageTracker.get(deviceToken) || 0;
 
@@ -116,7 +136,6 @@ app.post('/chat', async (req, res) => {
     return res.status(400).json({ error: 'That is a LOT of debrief.' });
   }
 
-  // Validate message format
   const validMessages = messages.every(m =>
     m.role && ['user', 'assistant'].includes(m.role) && typeof m.content === 'string' && m.content.length <= 500
   );
@@ -125,9 +144,9 @@ app.post('/chat', async (req, res) => {
   }
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001', // Cheapest!
-      max_tokens: 300,                     // Keep Jess snappy, not wordy
+    const response = await anthropicClient.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
       system: SYSTEM_PROMPT,
       messages: messages
     });
@@ -146,6 +165,12 @@ app.post('/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-const server = app.listen(PORT, () => console.log(`Jess is live on port ${PORT}`));
 
-module.exports = { app, server, registeredDevices };
+let server;
+
+connectToDb().then(() => {
+  server = app.listen(PORT, () => console.log(`Jess is live on port ${PORT}`));
+});
+
+// For testing purposes
+module.exports = { app, server, mongoClient };

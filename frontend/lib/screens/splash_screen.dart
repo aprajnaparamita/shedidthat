@@ -129,10 +129,10 @@ class SplashScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                'Ever have an amazing experience and immediately need to tell someone about it?\n\nThis app is for queer women who want to debrief after great dates and intimate moments — but your friends might be asleep, busy, or you\'ve already told them three times today.\n\nMeet Jess: your enthusiastic AI best friend who\'s always available, never judges, and genuinely wants to hear every detail. She asks great follow-up questions and helps you rate your experiences for the record.\n\nIt\'s comedy. It\'s catharsis. It\'s a safe space to process and celebrate.',
+                'Ever have an amazing experience and immediately need to tell someone about it?\n\nThis app is for queer women who want to debrief after great dates and intimate moments — but your friends might be asleep, busy, or you\'ve already told them three times today. Meet Jess: your enthusiastic AI best friend who\'s always available, never judges, and genuinely wants to hear every detail. She asks great follow-up questions and helps you rate your experiences for the record.\n\nIt\'s comedy. It\'s catharsis. It\'s a safe space to process and celebrate.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.buttonPrimaryText,
+                  color: AppColors.splashBubbleText,
                   fontSize: 16,
                   height: 1.4,
                 ),

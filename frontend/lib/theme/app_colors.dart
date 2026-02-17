@@ -20,6 +20,7 @@ class AppColors {
   static const Color jessBubbleBackground = Color(0xFFF5F5F5);
   static const Color jessBubbleText = Color(0xFF2D0838);
   static const Color jessBubbleBorder = Color(0xFFE6E6E6);
+  static const Color splashBubbleText = Color(0xFF2D0838);
   static const Color userBubbleBackground = Color(0xFFE91E8C);
   static const Color userBubbleGradientEnd = Color(0xFFFF3DA1);
   static const Color userBubbleText = Color(0xFFFFFFFF);
