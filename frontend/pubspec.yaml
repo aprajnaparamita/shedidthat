@@ -78,6 +78,7 @@ flutter:
   assets:
     - assets/header.png
     - assets/jess.png
+    - assets/janet.jpg
     - assets/GitHub_Lockup_Black_Clearspace.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see

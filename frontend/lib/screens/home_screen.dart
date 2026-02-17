@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shedidthat/screens/nag_screen.dart';
 import '../services/device_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/conversation_card.dart';
@@ -82,26 +83,37 @@ class _HomeScreenState extends State<HomeScreen> {
               return Column(
                 children: [
                   headerImage,
-              if (kDebugMode)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextButton(
-                    onPressed: () async {
-                      await _storageService.clearAll();
-                      await DeviceService.clearRegistration();
-                      // Reload the state to reflect the changes
-                      _loadConversations();
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('App state cleared! Please restart the app.'),
-                        ),
-                      );
-                    },
-                    child: const Text('Reset State (Debug Only)'),
-                  ),
-                ),
+                  if (kDebugMode)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              await _storageService.clearAll();
+                              await DeviceService.clearRegistration();
+                              _loadConversations();
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('App state cleared! Please restart the app.'),
+                                ),
+                              );
+                            },
+                            child: const Text('Reset State (Debug Only)'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const NagScreen()),
+                              );
+                            },
+                            child: const Text('Show Nag Screen (Debug Only)'),
+                          ),
+                        ],
+                      ),
+                    ),
               Expanded(
                 child: _conversationIds.isEmpty
                     ? EmptyState(onButtonPressed: _startNewConversation)

@@ -5,6 +5,7 @@ import '../services/device_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/chat_bubble.dart';
+import 'package:shedidthat/screens/nag_screen.dart';
 import '../widgets/jess_typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final StorageService _storageService = StorageService();
   final DeviceService _deviceService = DeviceService();
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   List<Message> _messages = [];
   String? _conversationId;
   bool _isLoading = false;
@@ -33,6 +35,25 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       _startNewConversation();
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _loadMessages() async {
@@ -71,6 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(userMessage);
       _isLoading = true;
     });
+    _scrollToBottom();
 
     await _storageService.saveConversation(_conversationId!, _messages);
 
@@ -82,7 +104,9 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       return;
     }
-    final reply = await ApiService.sendMessage(_messages, deviceToken);
+    final response = await ApiService.sendMessage(_messages, deviceToken);
+    final reply = response['reply'];
+    final shouldShowNag = response['shouldShowNag'] ?? false;
 
     final jessMessage = Message(role: 'assistant', content: reply, timestamp: DateTime.now());
 
@@ -90,8 +114,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(jessMessage);
       _isLoading = false;
     });
+    _scrollToBottom();
 
     await _storageService.saveConversation(_conversationId!, _messages);
+
+    if (shouldShowNag && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const NagScreen()),
+      );
+    }
   }
 
   @override
@@ -105,6 +136,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(8.0),
               itemCount: _messages.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
