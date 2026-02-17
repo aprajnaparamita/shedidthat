@@ -1,0 +1,25 @@
+app = "she-absolutely-just-did-that-api"
+primary_region = "ord"
+
+[build]
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true    # Scale to zero when idle = $0
+  auto_start_machines = true
+  min_machines_running = 0     # No minimum — saves money
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  memory = "256mb"             # Tiny — this app needs almost nothing
+  cpu_kind = "shared"
+  cpus = 1

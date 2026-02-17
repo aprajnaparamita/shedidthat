@@ -1,0 +1,69 @@
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+coverage/
+*.log
+logs/
+
+# Runtime data
+.DS_Store
+*.pid
+*.seed
+*.pid.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Testing
+.jest/
+.vitest/
+
+# Husky
+.husky/_/
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*
+*.dockerignore
+
+# Config files that should be local only
+nodemon.json
+eslint.config.cjs
+jest.config.cjs
+jest.config.ts
+tsconfig.json
+tsup.config.ts
+swagger.yaml
+nginx.conf
+Makefile
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: keep these in git if they're templates
+# but ignore if they contain sensitive/local config
+# .env.example  # Keep this as template
+# docker-compose.yml.example  # Keep as template

@@ -1,0 +1,38 @@
+name: she_absolutely_just_did_that
+description: The post-sex debrief chatbot for queer women.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP requests to backend
+  http: ^1.2.0
+
+  # Local conversation storage (no database needed)
+  shared_preferences: ^2.2.2
+
+  # Generating conversation IDs
+  uuid: ^4.3.3
+
+  # Device ID for registration
+  device_info_plus: ^9.1.0
+  crypto: ^3.0.3
+
+  # Custom fonts
+  google_fonts: ^6.1.0
+
+  # Nice icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
