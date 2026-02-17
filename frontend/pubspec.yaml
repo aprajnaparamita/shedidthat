@@ -31,6 +31,8 @@ dependencies:
   sentry_flutter: ^9.13.0
   flutter:
     sdk: flutter
+  url_launcher: ^6.1.10
+  flutter_svg: ^2.0.5
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -76,6 +78,7 @@ flutter:
   assets:
     - assets/header.png
     - assets/jess.png
+    - assets/GitHub_Lockup_Black_Clearspace.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/device_service.dart';
 import 'theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme, // Optional: Explicitly set dark theme
       themeMode: ThemeMode.dark, // Enforce dark mode
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }
