@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
@@ -18,7 +19,7 @@ class AppTheme {
         backgroundColor: AppColors.mainBackground,
         elevation: 0,
         titleTextStyle: const TextStyle(
-          fontFamily: 'Lato',
+          fontFamily: kIsWeb ? 'Lato' : null,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: AppColors.primaryText,

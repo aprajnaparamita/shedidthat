@@ -22,6 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final DeviceService _deviceService = DeviceService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode(); // Add FocusNode
   List<Message> _messages = [];
   String? _conversationId;
   bool _isLoading = false;
@@ -41,18 +42,22 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _focusNode.dispose(); // Dispose FocusNode
     super.dispose();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      // A longer delay to ensure the layout is fully updated before scrolling
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
   }
 
@@ -61,6 +66,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages = messages;
     });
+    _scrollToBottom();
   }
 
   Future<void> _startNewConversation() async {
@@ -114,6 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(jessMessage);
       _isLoading = false;
     });
+    _focusNode.requestFocus();
     _scrollToBottom();
 
     await _storageService.saveConversation(_conversationId!, _messages);
@@ -132,23 +139,25 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: const Text('Debrief'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _messages.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isLoading && index == _messages.length) {
-                  return const JessTypingIndicator();
-                }
-                return ChatBubble(message: _messages[index]);
-              },
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(8.0),
+                itemCount: _messages.length + (_isLoading ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (_isLoading && index == _messages.length) {
+                    return const JessTypingIndicator();
+                  }
+                  return ChatBubble(message: _messages[index]);
+                },
+              ),
             ),
-          ),
-          _buildMessageInput(),
-        ],
+            _buildMessageInput(),
+          ],
+        ),
       ),
     );
   }
@@ -161,6 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
+              focusNode: _focusNode,
               decoration: const InputDecoration(
                 hintText: 'Spill the tea...',
               ),

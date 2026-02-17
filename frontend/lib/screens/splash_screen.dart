@@ -27,86 +27,70 @@ class SplashScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
-
-              Widget headerImage;
-              if (isMobile) {
-                headerImage = Image.asset(
-                  'assets/header.png',
-                  width: double.infinity,
-                  fit: BoxFit.fitWidth,
-                );
-              } else {
-                final headerHeight = constraints.maxHeight * 0.4;
-                headerImage = SizedBox(
-                  height: headerHeight,
-                  child: Image.asset(
-                    'assets/header.png',
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                  ),
-                );
-              }
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 20),
-                    headerImage,
-                    const SizedBox(height: 32),
-                    const Text(
-                      'She Absolutely Just Did That',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildDivider(),
-                    const SizedBox(height: 24),
-                    _buildInfoBubble(context),
-                    const SizedBox(height: 24),
-                    const Text(
-                      '🔒 Your Privacy Matters',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.secondaryText,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.secondaryText,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildGithubButton(),
-                    const SizedBox(height: 16),
-                    _buildRichText(
-                      'Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ',
-                      'darabuilds.tech/dating',
-                      'https://darabuilds.tech/dating',
-                    ),
-                    const SizedBox(height: 24),
-                    _buildDivider(),
-                    const SizedBox(height: 24),
-                    _buildGetStartedButton(context),
-                    const SizedBox(height: 40),
-                  ],
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    return Image.asset(
+                      'assets/header.png',
+                      width: double.infinity,
+                      height: 200, // Set a fixed height
+                      fit: BoxFit.contain,
+                    );
+                  }),
                 ),
-              );
-            },
+                  const Text(
+                    'She Absolutely Just Did That',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDivider(),
+                  const SizedBox(height: 24),
+                  _buildInfoBubble(context),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '🔒 Your Privacy Matters',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildGithubButton(),
+                  const SizedBox(height: 16),
+                  _buildRichText(
+                    'Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ',
+                    'darabuilds.tech/dating',
+                    'https://darabuilds.tech/dating',
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDivider(),
+                  const SizedBox(height: 24),
+                  _buildGetStartedButton(context),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
           ),
         ),
       ),

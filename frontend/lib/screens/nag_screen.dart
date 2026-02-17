@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shedidthat/screens/bank_transfer_screen.dart';
+import 'package:shedidthat/screens/promptpay_screen.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 
 class NagScreen extends StatelessWidget {
@@ -18,6 +20,12 @@ class NagScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.mainBackground.withOpacity(0.95),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: true,
+        iconTheme: const IconThemeData(color: AppColors.primaryText),
+      ),
       body: SafeArea(
         child: Center(
           child: LayoutBuilder(builder: (context, constraints) {
@@ -53,9 +61,11 @@ class NagScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildDivider(),
                 const SizedBox(height: 24),
-                _buildRevolutButton(),
+                _buildRevolutButton(context),
                 const SizedBox(height: 16),
-                _buildBankTransferButton(),
+                _buildPromptPayButton(context),
+                const SizedBox(height: 16),
+                _buildBankTransferButton(context),
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -132,7 +142,7 @@ class NagScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRevolutButton() {
+  Widget _buildRevolutButton(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
@@ -140,12 +150,12 @@ class NagScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       ),
-      onPressed: () => _launchURL('https://revolut.me/your-revolut-link'), // Placeholder
-      child: const Text('Revolut', style: TextStyle(fontSize: 16)),
+      onPressed: () => _launchURL('https://revolut.me/janetbocr'),
+      child: const Text('Send with Revolut', style: TextStyle(fontSize: 16)),
     );
   }
 
-  Widget _buildBankTransferButton() {
+  Widget _buildPromptPayButton(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.userBubbleBackground,
@@ -153,7 +163,28 @@ class NagScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       ),
-      onPressed: () => _launchURL('https://your-bank-transfer-link'), // Placeholder
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const PromptPayScreen()),
+        );
+      },
+      child: const Text('Send with Thai PromptPay', style: TextStyle(fontSize: 16)),
+    );
+  }
+
+  Widget _buildBankTransferButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.userBubbleBackground,
+        foregroundColor: AppColors.primaryText,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+      ),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const BankTransferScreen()),
+        );
+      },
       child: const Text('Bank Transfer', style: TextStyle(fontSize: 16)),
     );
   }
