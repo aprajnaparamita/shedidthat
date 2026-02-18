@@ -115,39 +115,48 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
               Expanded(
-                child: _conversationIds.isEmpty
-                    ? EmptyState(onButtonPressed: _startNewConversation)
-                    : ListView.builder(
-                        itemCount: _conversationIds.length,
-                        itemBuilder: (context, index) {
-                          final conversationId = _conversationIds[index];
-                          return FutureBuilder<String>(
-                            future: _storageService
-                                .getConversationPreview(conversationId),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              }
-                              return ConversationCard(
-                                title: snapshot.data ?? '',
-                                time: 'just now', // Replace with actual time logic
-                                onTap: () => _openConversation(conversationId),
-                                onDelete: () => _deleteConversation(conversationId),
+                child: Stack(
+                  children: [
+                    _conversationIds.isEmpty
+                        ? EmptyState(onButtonPressed: _startNewConversation)
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(top: 80), // Add padding to avoid overlap
+                            itemCount: _conversationIds.length,
+                            itemBuilder: (context, index) {
+                              final conversationId = _conversationIds[index];
+                              return FutureBuilder<String>(
+                                future: _storageService
+                                    .getConversationPreview(conversationId),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  }
+                                  return ConversationCard(
+                                    title: snapshot.data ?? '',
+                                    time: 'just now', // Replace with actual time logic
+                                    onTap: () => _openConversation(conversationId),
+                                    onDelete: () => _deleteConversation(conversationId),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
+                          ),
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: FloatingActionButton(
+                        onPressed: _startNewConversation,
+                        child: const Icon(Icons.add),
                       ),
+                    ),
+                  ],
+                ),
               ),
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _startNewConversation,
-        child: const Icon(Icons.add),
       ),
     );
   }

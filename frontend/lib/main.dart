@@ -31,7 +31,8 @@ void main() {
       Size windowSize;
       if (Platform.isMacOS) {
         final primaryDisplay = await screenRetriever.getPrimaryDisplay();
-        windowSize = Size(768, primaryDisplay.size.height);
+        final visibleSize = primaryDisplay.visibleSize ?? primaryDisplay.size;
+        windowSize = Size(768, visibleSize.height);
       } else {
         windowSize = const Size(400, 800);
       }
