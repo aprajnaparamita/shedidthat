@@ -29,8 +29,8 @@ class PromptPayScreen extends StatelessWidget {
         bool hasPermission = false;
         if (Platform.isAndroid) {
           hasPermission = await Permission.storage.request().isGranted;
-        } else { // iOS
-          hasPermission = true; // No explicit permission needed for gallery on iOS
+        } else if (Platform.isIOS) {
+          hasPermission = await Permission.photos.request().isGranted;
         }
 
         if (!hasPermission) {

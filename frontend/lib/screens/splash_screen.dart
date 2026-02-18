@@ -17,6 +17,9 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -27,65 +30,70 @@ class SplashScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    return Image.asset(
-                      'assets/header.png',
-                      width: double.infinity,
-                      height: 200, // Set a fixed height
-                      fit: BoxFit.contain,
-                    );
-                  }),
+          child: ScrollConfiguration(
+            behavior: const NoGlowScrollBehavior(),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        return Image.asset(
+                          'assets/header.png',
+                          width: double.infinity,
+                          height: 200, // Set a fixed height
+                          fit: BoxFit.contain,
+                        );
+                      }),
+                    ),
+                    const Text(
+                      'She Absolutely Just Did That',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 28,
+                      ),
+                    ),
+                    _buildDivider(),
+                    if (isTablet) const SizedBox(height: 24),
+                    _buildInfoBubble(context),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '🔒 Your Privacy Matters',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.secondaryText,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.secondaryText,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildGithubButton(),
+                    const SizedBox(height: 16),
+                    _buildRichText(
+                      'Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ',
+                      'darabuilds.tech/dating',
+                      'https://darabuilds.tech/dating',
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDivider(),
+                    if (isTablet) const SizedBox(height: 24),
+                    _buildGetStartedButton(context),
+                    const SizedBox(height: 40),
+                  ],
                 ),
-                  const Text(
-                    'She Absolutely Just Did That',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                  ),
-                  _buildDivider(),
-                  const SizedBox(height: 24),
-                  _buildInfoBubble(context),
-                  const Text(
-                    '🔒 Your Privacy Matters',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.secondaryText,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.secondaryText,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildGithubButton(),
-                  const SizedBox(height: 16),
-                  _buildRichText(
-                    'Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ',
-                    'darabuilds.tech/dating',
-                    'https://darabuilds.tech/dating',
-                  ),
-                  const SizedBox(height: 24),
-                  _buildDivider(),
-                  _buildGetStartedButton(context),
-                  const SizedBox(height: 40),
-                ],
               ),
             ),
           ),
@@ -242,4 +250,13 @@ class BubbleTailPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class NoGlowScrollBehavior extends ScrollBehavior {
+  const NoGlowScrollBehavior();
+  @override
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
 }
