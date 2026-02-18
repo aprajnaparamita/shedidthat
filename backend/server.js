@@ -1,176 +1,109 @@
-const express = require('express');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
-const { Anthropic } = require('@anthropic-ai/sdk');
-const { MongoClient } = require('mongodb');
-const Sentry = require("@sentry/node");
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 
-Sentry.init({
-  dsn: process.env.SENTRY_API_KEY,
-  sendDefaultPii: true,
-});
+// The Hono app is the main router for our Cloudflare Worker.
+const app = new Hono();
 
-if (process.env.NODE_ENV === 'test') {
-  require('dotenv').config({ path: '.env.test' });
-} else {
-  require('dotenv').config();
-}
-const fs = require('fs');
-const path = require('path');
+// --- Middleware ---
 
-const app = express();
-const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Enable CORS for all routes to allow requests from your frontend.
+app.use('/*', cors());
 
-// MongoDB setup
-const mongoClient = new MongoClient(process.env.MONGODB_URI);
-let devicesCollection;
+// Authentication Middleware: Checks for a valid secret and registered device.
+const authMiddleware = async (c, next) => {
+  const secret = c.req.header('X-App-Secret');
+  const deviceId = c.req.header('X-Device-Id');
 
-async function connectToDb() {
-  try {
-    await mongoClient.connect();
-    const database = mongoClient.db('SheDidThat'); // You can name your DB here
-    devicesCollection = database.collection('devices');
-    console.log('Successfully connected to MongoDB Atlas.');
-  } catch (error) {
-    console.error('Failed to connect to MongoDB', error);
-    process.exit(1);
+  // c.env contains environment variables and bindings set in wrangler.toml or the dashboard.
+  if (secret !== c.env.APP_SECRET) {
+    return c.json({ error: 'Nope.' }, 401);
   }
-}
 
-const usageTracker = new Map();
-
-// Load persona once at startup
-const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'persona.md'), 'utf8');
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] Received ${req.method} request for ${req.url}`);
-  next();
-});
-
-// App secret middleware
-const appSecretMiddleware = (req, res, next) => {
-  const receivedSecret = req.get('x-app-secret');
-  const serverSecret = process.env.APP_SECRET;
-  if (receivedSecret !== serverSecret) {
-    return res.status(401).json({ error: 'Nope.' });
+  if (!deviceId) {
+    return c.json({ error: 'Device ID is required.' }, 400);
   }
-  next();
+
+  // Check if the device is registered in our Cloudflare KV store.
+  // c.env.DEVICE_KV is the binding to our KV namespace.
+  const isRegistered = await c.env.DEVICE_KV.get(deviceId);
+  if (!isRegistered) {
+    return c.json({ error: 'Device not registered.' }, 401);
+  }
+
+  // Add deviceId to the context to use in later handlers.
+  c.set('deviceId', deviceId);
+  await next();
 };
-app.use('/chat', appSecretMiddleware);
 
-// Device token middleware
-const deviceTokenMiddleware = async (req, res, next) => {
-  const deviceToken = req.get('x-device-token');
-  try {
-    const device = await devicesCollection.findOne({ deviceToken });
-    if (!device) {
-      return res.status(401).json({ error: 'Nope.' });
+// Rate Limiting Middleware: Limits requests per device.
+const rateLimitMiddleware = async (c, next) => {
+  const deviceId = c.get('deviceId');
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const maxRequests = 100;
+
+  const key = `rate-limit:${deviceId}`;
+  const storedData = await c.env.DEVICE_KV.get(key, { type: 'json' });
+
+  if (storedData && (now - storedData.timestamp) < windowMs) {
+    if (storedData.count >= maxRequests) {
+      return c.json({ error: 'Too many requests, please try again later.' }, 429);
     }
-    next();
-  } catch (error) {
-    console.error('Error validating device token:', error);
-    return res.status(500).json({ error: 'Server error during authentication.' });
+    // Update the count and timestamp, expiring after the window.
+    await c.env.DEVICE_KV.put(key, JSON.stringify({ count: storedData.count + 1, timestamp: storedData.timestamp }), { expirationTtl: windowMs / 1000 });
+  } else {
+    // Start a new window for the user.
+    await c.env.DEVICE_KV.put(key, JSON.stringify({ count: 1, timestamp: now }), { expirationTtl: windowMs / 1000 });
   }
+
+  await next();
 };
-app.use('/chat', deviceTokenMiddleware);
 
-// Rate limiting
-const burstLimiter = rateLimit({
-  windowMs: 10 * 1000, // 10 seconds
-  max: 5,
-  message: { error: 'Slow down babe.' }
-});
-app.use('/chat', burstLimiter);
+// --- Routes ---
 
-const dailyLimiter = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 50,
-  message: { error: 'Easy there! Come back tomorrow with more stories.' }
-});
-app.use('/chat', dailyLimiter);
+// Health check route
+app.get('/', (c) => c.text('She Absolutely Just Did That - Backend is running!'));
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'Jess is ready and waiting' }));
-
-// Register device
-app.post('/register', async (req, res) => {
-  const { deviceToken } = req.body;
-  if (!deviceToken) {
-    return res.status(400).json({ error: 'deviceToken required' });
-  }
+// POST /register: Registers a new device.
+app.post('/register', async (c) => {
   try {
-    const existingDevice = await devicesCollection.findOne({ deviceToken });
-    if (existingDevice) {
-      return res.status(200).json({ status: 'Device already registered' });
+    const { deviceId } = await c.req.json();
+    if (!deviceId) {
+      return c.json({ error: 'Device ID is required for registration.' }, 400);
     }
-    await devicesCollection.insertOne({ deviceToken, createdAt: new Date() });
-    console.log(`[Server] Device ${deviceToken.substring(0, 10)}... registered in DB.`);
-    res.status(200).json({ status: 'Device registered' });
+
+    // Store the deviceId in the KV store. The value can be simple, we just need the key to exist.
+    // We set an expiration TTL (Time To Live) of 1 year (in seconds).
+    const oneYearInSeconds = 365 * 24 * 60 * 60;
+    await c.env.DEVICE_KV.put(deviceId, 'registered', { expirationTtl: oneYearInSeconds });
+
+    console.log(`Device registered: ${deviceId}`);
+    return c.json({ message: 'Device registered successfully' });
   } catch (error) {
-    console.error('Error during device registration:', error);
-    res.status(500).json({ error: 'Could not register device.' });
+    console.error('Registration error:', error);
+    return c.json({ error: 'Failed to register device' }, 500);
   }
 });
 
-// Main chat endpoint
-app.post('/chat', async (req, res) => {
-  const deviceToken = req.get('x-device-token');
-  const currentUsage = usageTracker.get(deviceToken) || 0;
-
-  if (currentUsage >= 100) {
-    return res.status(429).json({ error: "You've had quite the day. Come back tomorrow." });
-  }
-
-  const { messages } = req.body;
-
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'messages array required' });
-  }
-
-  if (messages.length > 30) {
-    return res.status(400).json({ error: 'That is a LOT of debrief.' });
-  }
-
-  const validMessages = messages.every(m =>
-    m.role && ['user', 'assistant'].includes(m.role) && typeof m.content === 'string' && m.content.length <= 500
-  );
-  if (!validMessages) {
-    return res.status(400).json({ error: 'Summarise babe, I have questions.' });
-  }
-
+// POST /chat: Handles chat messages, protected by auth and rate limiting.
+app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
-    const response = await anthropicClient.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      system: SYSTEM_PROMPT,
-      messages: messages
-    });
+    const { message } = await c.req.json();
+    const deviceId = c.get('deviceId');
 
-    res.json({ reply: response.content[0].text });
+    console.log(`Chat message from ${deviceId}: ${message}`);
 
-    const newUsage = currentUsage + 1;
-    usageTracker.set(deviceToken, newUsage);
-    if (newUsage > 20) {
-      console.warn(`Device ${deviceToken} has sent ${newUsage} messages.`);
-    }
+    // Placeholder for your actual chat logic (e.g., calling an AI service)
+    const reply = `Jess: You said, \"${message}\". That's amazing! Tell me more.`;
+
+    return c.json({ reply });
   } catch (error) {
-    console.error('Anthropic error:', error);
-    res.status(500).json({ error: 'Jess is having a moment, try again' });
+    console.error('Chat error:', error);
+    return c.json({ error: 'An error occurred during the chat.' }, 500);
   }
 });
 
-const PORT = process.env.PORT || 8080;
+// --- Export the Hono app ---
 
-let server;
-
-connectToDb().then(() => {
-  server = app.listen(PORT, () => console.log(`Jess is live on port ${PORT}`));
-});
-
-// For testing purposes
-module.exports = { app, server, mongoClient };
+// The default export is what Cloudflare Workers will execute.
+export default app;
