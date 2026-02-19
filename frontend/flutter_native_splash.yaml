@@ -1,0 +1,8 @@
+flutter_native_splash:
+  color: "#1c0425"
+  image: /Users/dara/dev/shedidthat/frontend/assets/header.png
+  fullscreen: true
+
+  android_12:
+    color: "#1c0425"
+    image: /Users/dara/dev/shedidthat/frontend/assets/header.png
