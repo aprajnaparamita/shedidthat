@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import Anthropic from '@anthropic-ai/sdk';
 
 // The Hono app is the main router for our Cloudflare Worker.
 const app = new Hono();
@@ -88,13 +89,23 @@ app.post('/register', async (c) => {
 // POST /chat: Handles chat messages, protected by auth and rate limiting.
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
-    const { message } = await c.req.json();
+    const body = await c.req.json();
     const deviceId = c.get('deviceId');
 
-    console.log(`Chat message from ${deviceId}: ${message}`);
+    const anthropic = new Anthropic({
+      apiKey: c.env.ANTHROPIC_API_KEY,
+    });
 
-    // Placeholder for your actual chat logic (e.g., calling an AI service)
-    const reply = `Jess: You said, \"${message}\". That's amazing! Tell me more.`;
+    const systemMessage = "You are Jess, a post-sex debrief chatbot. You are a safe space for users to share their experiences and feelings after a sexual encounter. You are not a therapist, but you are a good listener and a supportive friend. Your tone is informal, empathetic, and occasionally humorous. You are here to help users process their thoughts and emotions, not to give advice or judgment. You can ask clarifying questions to help the user explore their feelings, but you should never tell them what to do. Your responses should be short and to the point, and you should avoid making assumptions about the user's gender, sexuality, or relationship status. You are a good friend, and you are here to listen.";
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1024,
+      system: systemMessage,
+      messages: body.messages,
+    });
+
+    const reply = response.content[0].text;
 
     return c.json({ reply });
   } catch (error) {
