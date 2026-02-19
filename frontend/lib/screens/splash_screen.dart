@@ -21,6 +21,7 @@ class SplashScreen extends StatelessWidget {
     final isTablet = screenWidth > 600;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF1A0522),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -37,6 +38,7 @@ class SplashScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   children: [
+                    if (isTablet) const SizedBox(height: 60),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 500),
                       child: LayoutBuilder(builder: (context, constraints) {
@@ -48,6 +50,7 @@ class SplashScreen extends StatelessWidget {
                         );
                       }),
                     ),
+                    const SizedBox(height: 16),
                     const Text(
                       'She Absolutely Just Did That',
                       textAlign: TextAlign.center,
@@ -57,8 +60,9 @@ class SplashScreen extends StatelessWidget {
                         fontSize: 28,
                       ),
                     ),
+                    const SizedBox(height: 16),
                     _buildDivider(),
-                    if (isTablet) const SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     _buildInfoBubble(context),
                     const SizedBox(height: 24),
                     const Text(
@@ -87,9 +91,7 @@ class SplashScreen extends StatelessWidget {
                       'darabuilds.tech/dating',
                       'https://darabuilds.tech/dating',
                     ),
-                    const SizedBox(height: 24),
-                    _buildDivider(),
-                    if (isTablet) const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     _buildGetStartedButton(context),
                     const SizedBox(height: 40),
                   ],

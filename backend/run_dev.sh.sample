@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Get the local IP address (for macOS)
+IP_ADDRESS=$(ipconfig getifaddr en0)
+
+# Check if we got an IP address
+if [ -z "$IP_ADDRESS" ]; then
+    echo "Could not determine local IP address. Exiting."
+    exit 1
+fi
+
+# Write the IP address to the .env file
+echo "DEV_IP=$IP_ADDRESS" > .env
+echo "ANTHROPIC_API_KEY=ADD_API_KEY_HERE!" >> .env
+echo "APP_SECRET=ADD_APP_SECRET_HERE" >> .env
+echo "SENTRY_API_KEY=ADD_SENTRY_API_KEY_HERE" >> .env
+echo "Set DEV_IP to $IP_ADDRESS in .env"
+
+# Start the wrangler dev server
+# The --ip flag makes the server accessible from other devices on the network
+wrangler dev --port 8788 --ip $IP_ADDRESS
