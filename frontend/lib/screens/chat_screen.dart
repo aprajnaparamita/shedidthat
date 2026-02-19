@@ -36,6 +36,15 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       _startNewConversation();
     }
+
+    // Request focus after the first frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      });
+    });
   }
 
   @override
