@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:shedidthat/theme/app_colors.dart';
 
 class EmptyState extends StatelessWidget {
   final VoidCallback onButtonPressed;
+  final bool isLoading;
 
-  const EmptyState({super.key, required this.onButtonPressed});
+  const EmptyState({
+    super.key,
+    required this.onButtonPressed,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +28,11 @@ class EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: onButtonPressed,
+            onPressed: isLoading ? null : onButtonPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isLoading ? AppColors.buttonSecondary : AppColors.accent,
+            ),
             child: const Text('Start Debriefing'),
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shedidthat/theme/app_colors.dart';
 import 'package:shedidthat/screens/nag_screen.dart';
 import '../services/device_service.dart';
 import '../services/storage_service.dart';
@@ -17,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
   List<String> _conversationIds = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,12 +33,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _startNewConversation() {
+  void _startNewConversation() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ChatScreen(conversationId: null),
       ),
-    ).then((_) => _loadConversations());
+    ).then((_) {
+      _loadConversations();
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   void _openConversation(String conversationId) {
@@ -118,7 +133,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Stack(
                   children: [
                     _conversationIds.isEmpty
-                        ? EmptyState(onButtonPressed: _startNewConversation)
+                        ? EmptyState(
+                            onButtonPressed: _startNewConversation,
+                            isLoading: _isLoading,
+                          )
                         : ListView.builder(
                             padding: const EdgeInsets.only(top: 80), // Add padding to avoid overlap
                             itemCount: _conversationIds.length,
@@ -147,7 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: 16,
                       left: 16,
                       child: FloatingActionButton(
-                        onPressed: _startNewConversation,
+                        onPressed: _isLoading ? null : _startNewConversation,
+                        backgroundColor: _isLoading
+                            ? AppColors.buttonSecondary
+                            : AppColors.accent,
                         child: const Icon(Icons.add),
                       ),
                     ),

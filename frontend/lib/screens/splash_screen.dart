@@ -6,8 +6,15 @@ import 'package:shedidthat/screens/home_screen.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  bool _isLoading = false;
 
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
@@ -213,13 +220,21 @@ class SplashScreen extends StatelessWidget {
         ],
       ),
       child: ElevatedButton(
-        onPressed: () {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        },
+        onPressed: _isLoading
+            ? null
+            : () async {
+                setState(() {
+                  _isLoading = true;
+                });
+                await Future.delayed(const Duration(milliseconds: 50));
+                if (!mounted) return;
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor:
+              _isLoading ? AppColors.buttonSecondary : AppColors.accent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),

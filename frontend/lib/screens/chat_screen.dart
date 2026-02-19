@@ -25,7 +25,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _focusNode = FocusNode(); // Add FocusNode
   List<Message> _messages = [];
   String? _conversationId;
-  bool _isLoading = false;
+  bool _isJessTyping = false;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -95,6 +96,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    setState(() {
+      _isSending = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 50));
+
     _controller.clear();
     final userMessage = Message(role: 'user', content: text, timestamp: DateTime.now());
 
@@ -105,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       _messages.add(userMessage);
-      _isLoading = true;
+      _isJessTyping = true;
     });
     _scrollToBottom();
 
@@ -115,7 +121,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (deviceToken == null) {
       // TODO: Handle device registration error
       setState(() {
-        _isLoading = false;
+        _isJessTyping = false;
       });
       return;
     }
@@ -127,7 +133,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       _messages.add(jessMessage);
-      _isLoading = false;
+      _isJessTyping = false;
+      _isSending = false;
     });
     _focusNode.requestFocus();
     _scrollToBottom();
@@ -155,9 +162,9 @@ class _ChatScreenState extends State<ChatScreen> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(8.0),
-                itemCount: _messages.length + (_isLoading ? 1 : 0),
+                itemCount: _messages.length + (_isJessTyping ? 1 : 0),
                 itemBuilder: (context, index) {
-                  if (_isLoading && index == _messages.length) {
+                  if (_isJessTyping && index == _messages.length) {
                     return const JessTypingIndicator();
                   }
                   return ChatBubble(message: _messages[index]);
@@ -183,13 +190,14 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: const InputDecoration(
                 hintText: 'Spill the tea...',
               ),
-              enabled: !_isLoading,
+              enabled: !_isJessTyping,
               onSubmitted: (value) => _sendMessage(),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            onPressed: _isLoading ? null : () => _sendMessage(),
+            onPressed: _isJessTyping || _isSending ? null : _sendMessage,
+            color: _isSending ? AppColors.buttonSecondary : AppColors.accent,
           ),
         ],
       ),

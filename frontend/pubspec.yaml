@@ -109,4 +109,4 @@ flutter_launcher_icons:
     generate: true
   web:
     generate: true
-  image_path: "assets/AppIcons/appstore.png"
+  image_path: "assets/jess.png"
