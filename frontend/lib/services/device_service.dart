@@ -44,7 +44,7 @@ class DeviceService {
 
     if (!alreadyRegistered) {
       final token = await getDeviceToken();
-      const baseUrl = kDebugMode ? 'http://localhost:8788' : 'https://api.shedidthat.app';
+      const baseUrl = String.fromEnvironment('API_URI', defaultValue: 'https://api.shedidthat.app');
       final url = Uri.parse('$baseUrl/register');
       print('[DeviceService] Attempting to register device at $url');
 

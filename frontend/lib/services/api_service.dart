@@ -6,8 +6,7 @@ import '../models/message.dart';
 import 'device_service.dart';
 
 class ApiService {
-  static const String _baseUrl =
-      kDebugMode ? 'http://localhost:8788' : 'https://api.shedidthat.app';
+  static const String _baseUrl = String.fromEnvironment('API_URI', defaultValue: 'https://api.shedidthat.app');
   static const String _appSecret = String.fromEnvironment('APP_SECRET');
 
   static Future<Map<String, dynamic>> sendMessage(
