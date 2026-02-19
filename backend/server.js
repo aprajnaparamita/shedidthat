@@ -8,7 +8,12 @@ const app = new Hono();
 // --- Middleware ---
 
 // Enable CORS for all routes to allow requests from your frontend.
-app.use('/*', cors());
+app.use('/*', cors({
+  origin: [
+    'https://shedidthat.app',
+    'https://shedidthat.pages.dev'
+  ]
+}));
 
 // Authentication Middleware: Checks for a valid secret and registered device.
 const authMiddleware = async (c, next) => {

@@ -3923,7 +3923,12 @@ var sdk_default = Anthropic;
 
 // server.js
 var app = new Hono2();
-app.use("/*", cors());
+app.use("/*", cors({
+  origin: [
+    "https://shedidthat.app",
+    "https://shedidthat.pages.dev"
+  ]
+}));
 var authMiddleware = /* @__PURE__ */ __name(async (c, next) => {
   const secret = c.req.header("X-App-Secret");
   const deviceId = c.req.header("X-Device-Id");
