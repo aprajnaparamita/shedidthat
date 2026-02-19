@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -51,14 +52,16 @@ class SplashScreen extends StatelessWidget {
                       }),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    const AutoSizeText(
                       'She Absolutely Just Did That',
-                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.accent,
                         fontWeight: FontWeight.bold,
                         fontSize: 28,
                       ),
+                      maxLines: 1,
+                      minFontSize: 18,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     _buildDivider(),

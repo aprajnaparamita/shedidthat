@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter_native_splash: ^2.4.7
   sentry_flutter: ^9.13.0
+  auto_size_text: ^3.0.0
   flutter:
     sdk: flutter
   url_launcher: ^6.1.10
