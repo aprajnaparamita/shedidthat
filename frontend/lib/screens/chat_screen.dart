@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/message.dart';
+import '../services/api_exceptions.dart';
 import '../services/api_service.dart';
 import '../services/device_service.dart';
 import '../services/storage_service.dart';
@@ -19,14 +21,16 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final StorageService _storageService = StorageService();
-  final DeviceService _deviceService = DeviceService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final FocusNode _focusNode = FocusNode(); // Add FocusNode
+  final FocusNode _focusNode = FocusNode();
   List<Message> _messages = [];
   String? _conversationId;
   bool _isJessTyping = false;
   bool _isSending = false;
+
+  // New state for retry logic
+  String? _uiMessage;
 
   @override
   void initState() {
@@ -38,7 +42,6 @@ class _ChatScreenState extends State<ChatScreen> {
       _startNewConversation();
     }
 
-    // Request focus after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
@@ -52,13 +55,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
-    _focusNode.dispose(); // Dispose FocusNode
+    _focusNode.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // A longer delay to ensure the layout is fully updated before scrolling
       Future.delayed(const Duration(milliseconds: 500), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -80,11 +82,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _startNewConversation() async {
-    // Don't create an ID or save until the first message is sent.
     final welcomeMessage = Message(
       role: 'assistant',
-      content:
-          "Hey bestie! So glad you're here. What's on your mind?",
+      content: "Hey bestie! So glad you're here. What's on your mind?",
       timestamp: DateTime.now(),
     );
     setState(() {
@@ -92,66 +92,125 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future<void> _sendMessage() async {
+  // Main method to handle sending a message
+  Future<void> _handleSendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _isSending = true;
-    });
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    _controller.clear();
     final userMessage = Message(role: 'user', content: text, timestamp: DateTime.now());
 
-    // If this is the first message, create the conversation now.
+    setState(() {
+      _isSending = true;
+      _uiMessage = null; // Clear previous messages
+      _messages.add(userMessage);
+    });
+
+    _controller.clear();
+    _scrollToBottom();
+
+    // Save conversation early
     if (_conversationId == null) {
       _conversationId = await _storageService.newConversation();
     }
+    await _storageService.saveConversation(_conversationId!, _messages);
 
+    try {
+      await _trySendMessageWithRetries(userMessage);
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+      _focusNode.requestFocus();
+    }
+  }
+
+  // Recursive method to handle retries
+  Future<void> _trySendMessageWithRetries(Message userMessage, {int attempt = 1}) async {
     setState(() {
-      _messages.add(userMessage);
       _isJessTyping = true;
     });
-    _scrollToBottom();
 
-    await _storageService.saveConversation(_conversationId!, _messages);
+    try {
+      final deviceToken = await DeviceService.getDeviceToken();
+      final response = await ApiService.sendMessage(_messages, deviceToken);
+      final reply = response['reply'];
+      final shouldShowNag = response['shouldShowNag'] ?? false;
 
-    final deviceToken = await DeviceService.getDeviceToken();
-    if (deviceToken == null) {
-      // TODO: Handle device registration error
+      final jessMessage = Message(role: 'assistant', content: reply, timestamp: DateTime.now());
+
       setState(() {
+        _messages.add(jessMessage);
+        _isJessTyping = false;
+        _uiMessage = null; // Clear any messages
+      });
+
+      await _storageService.saveConversation(_conversationId!, _messages);
+      _scrollToBottom();
+
+      if (shouldShowNag && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const NagScreen()),
+        );
+      }
+    } on RegistrationException catch (e) {
+      print('[ChatScreen] Attempt $attempt failed with RegistrationException: $e');
+      await _handleRetry(userMessage, attempt, e);
+    } on NetworkException catch (e) {
+      print('[ChatScreen] Attempt $attempt failed with NetworkException: $e');
+      await _handleRetry(userMessage, attempt, e);
+    } on RateLimitException catch (e) {
+      final errorMessage = Message(role: 'assistant', content: e.message, timestamp: DateTime.now());
+      setState(() {
+        _messages.add(errorMessage);
         _isJessTyping = false;
       });
-      return;
+    } catch (e) {
+      print('[ChatScreen] An unexpected error occurred: $e');
+      final errorMessage = Message(role: 'assistant', content: 'An unexpected error occurred. Please try again.', timestamp: DateTime.now());
+      setState(() {
+        _messages.add(errorMessage);
+        _isJessTyping = false;
+      });
     }
-    final response = await ApiService.sendMessage(_messages, deviceToken);
-    final reply = response['reply'];
-    final shouldShowNag = response['shouldShowNag'] ?? false;
+  }
 
-    final jessMessage = Message(role: 'assistant', content: reply, timestamp: DateTime.now());
-
-    setState(() {
-      _messages.add(jessMessage);
-      _isJessTyping = false;
-      _isSending = false;
-    });
-    _focusNode.requestFocus();
-    _scrollToBottom();
-
-    await _storageService.saveConversation(_conversationId!, _messages);
-
-    if (shouldShowNag && mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const NagScreen()),
-      );
+  Future<void> _handleRetry(Message userMessage, int attempt, Exception e) async {
+    if (attempt == 1) {
+      // First failure: silent retry
+      print('[ChatScreen] Silently attempting to re-register and retry.');
+      await DeviceService.registerDevice();
+      await _trySendMessageWithRetries(userMessage, attempt: 2);
+    } else if (attempt == 2) {
+      // Second failure: show message and wait
+      print('[ChatScreen] Second attempt failed. Waiting 3 seconds.');
+      setState(() {
+        _uiMessage = 'One moment, this is taking longer than normal';
+      });
+      await Future.delayed(const Duration(seconds: 3));
+      await DeviceService.registerDevice();
+      await _trySendMessageWithRetries(userMessage, attempt: 3);
+    } else {
+      // Third failure: give up
+      print('[ChatScreen] Final attempt failed. Showing error to user.');
+      setState(() {
+        _uiMessage = 'Jess is having a problem.';
+        _isJessTyping = false;
+      });
+      // After a delay, clear the error to allow the user to try again
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _uiMessage = null;
+          });
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-                  backgroundColor: AppColors.screenBackground,
+      backgroundColor: AppColors.screenBackground,
       appBar: AppBar(
         title: const Text('Debrief'),
       ),
@@ -171,6 +230,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
             ),
+            if (_uiMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  _uiMessage!,
+                  style: const TextStyle(color: AppColors.secondaryText),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             _buildMessageInput(),
           ],
         ),
@@ -190,13 +258,13 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: const InputDecoration(
                 hintText: 'Spill the tea...',
               ),
-              enabled: !_isJessTyping,
-              onSubmitted: (value) => _sendMessage(),
+              enabled: !_isSending && !_isJessTyping,
+              onSubmitted: (value) => _handleSendMessage(),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            onPressed: _isJessTyping || _isSending ? null : _sendMessage,
+            onPressed: _isSending || _isJessTyping ? null : _handleSendMessage,
             color: _isSending ? AppColors.buttonSecondary : AppColors.accent,
           ),
         ],

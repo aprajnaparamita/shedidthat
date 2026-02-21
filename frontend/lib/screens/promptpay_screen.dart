@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,15 +18,38 @@ class PromptPayScreen extends StatelessWidget {
       final bytes = byteData.buffer.asUint8List();
       String message = 'Saved';
 
-      if (kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      print('[_saveImage] Attempting to save QR code...');
+
+      if (Platform.isMacOS) {
+        // Use file_picker for macOS
+        print('[_saveImage] Using file_picker for macOS. A save dialog should appear.');
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Please select an output file:',
+          fileName: 'promptpay_qr.jpeg',
+        );
+
+        if (outputFile != null) {
+          File file = File(outputFile);
+          await file.writeAsBytes(bytes);
+          message = 'Saved file to $outputFile';
+          print('[_saveImage] File saved to: $outputFile');
+        } else {
+          message = 'Save cancelled';
+          print('[_saveImage] User canceled the save dialog.');
+        }
+      } else if (kIsWeb || Platform.isWindows || Platform.isLinux) {
         // Use file_saver for desktop and web
-        await FileSaver.instance.saveFile(
+        print('[_saveImage] Using file_saver for desktop/web. A save dialog should appear.');
+        String? filePath = await FileSaver.instance.saveFile(
           name: 'promptpay_qr.jpeg',
           bytes: bytes,
           mimeType: MimeType.jpeg,
         );
+        message = filePath != null ? 'Saved file to Downloads' : 'Save cancelled';
+        print('[_saveImage] file_saver process completed. Path: $filePath');
       } else if (Platform.isAndroid || Platform.isIOS) {
         // Use image_gallery_saver for mobile
+        print('[_saveImage] Using image_gallery_saver for mobile.');
         bool hasPermission = false;
         if (Platform.isAndroid) {
           hasPermission = await Permission.storage.request().isGranted;
@@ -34,19 +58,17 @@ class PromptPayScreen extends StatelessWidget {
         }
 
         if (!hasPermission) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Storage permission is required.')),
-            );
-          }
-          return;
-        }
-
-        final result = await ImageGallerySaver.saveImage(bytes);
-        if (result['isSuccess']) {
-          message = 'Saved to Camera Roll';
+          message = 'Storage permission is required.';
+          print('[_saveImage] Permission denied.');
         } else {
-          throw Exception('Failed to save to gallery');
+          final result = await ImageGallerySaver.saveImage(bytes);
+          if (result['isSuccess']) {
+            message = 'Saved to Photos';
+            final filePath = result['filePath'];
+            print('[_saveImage] Successfully saved to Photos. Path: $filePath');
+          } else {
+            throw Exception('Failed to save to gallery');
+          }
         }
       }
 
@@ -56,6 +78,7 @@ class PromptPayScreen extends StatelessWidget {
         );
       }
     } catch (e) {
+      print('[_saveImage] Error: ${e.toString()}');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save QR Code: ${e.toString()}')),

@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/message.dart';
+import 'api_exceptions.dart';
 import 'device_service.dart';
 
 class ApiService {
@@ -11,15 +13,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> sendMessage(
       List<Message> messages, String deviceToken) async {
-    // Ensure the device is registered before sending a message.
-    final isRegistered = await DeviceService.isDeviceRegistered();
-    if (!isRegistered) {
-      print('[ApiService] Device not registered. Attempting to register now.');
-      await DeviceService.registerDevice();
-    }
-
     final url = Uri.parse('$_baseUrl/chat');
     print('[ApiService] Sending message to $url');
+
     try {
       final response = await http.post(
         url,
@@ -45,35 +41,21 @@ class ApiService {
           'shouldShowNag': requestCount % 3 == 0,
         };
       } else if (response.statusCode == 401) {
-        // If unauthorized, the server doesn't recognize our device or secret.
-        // Mark as unregistered to force re-registration on the next attempt.
-        print('[ApiService] Unauthorized. Marking device as unregistered.');
         await DeviceService.markAsUnregistered();
         final errorBody = jsonDecode(response.body);
         final errorMessage = errorBody['error'] ?? 'Authorization error';
-        return {
-          'reply': 'Jess is having a moment ($errorMessage) — try again',
-          'shouldShowNag': false,
-        };
+        throw RegistrationException(errorMessage);
       } else if (response.statusCode == 429) {
-        print('[ApiService] Rate limit exceeded.');
-        return {
-          'reply': 'Easy there! Come back tomorrow with more stories.',
-          'shouldShowNag': false,
-        };
+        throw RateLimitException('Easy there! Come back tomorrow with more stories.');
       } else {
-        print('[ApiService] API returned an error: ${response.body}');
-        return {
-          'reply': 'Jess is having a moment — try again',
-          'shouldShowNag': false,
-        };
+        throw NetworkException('API returned an error: ${response.body}');
       }
+    } on SocketException catch (e) {
+      print('[ApiService] Failed to send message with SocketException: $e');
+      throw NetworkException('Please check your network connection.');
     } catch (e) {
       print('[ApiService] Failed to send message with exception: $e');
-      return {
-        'reply': 'Jess is having a moment — try again',
-        'shouldShowNag': false,
-      };
+      throw NetworkException('An unexpected error occurred.');
     }
   }
 }

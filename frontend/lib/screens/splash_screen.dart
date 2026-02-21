@@ -3,8 +3,19 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shedidthat/screens/home_screen.dart';
+import 'package:shedidthat/services/device_service.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+// Top-level class definition
+class NoGlowScrollBehavior extends ScrollBehavior {
+  const NoGlowScrollBehavior();
+  @override
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,11 +27,71 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _triggerRegistration();
+  }
+
+  void _triggerRegistration() async {
+    if (!await DeviceService.isDeviceRegistered()) {
+      print('[SplashScreen] Device not registered. Triggering background registration.');
+      DeviceService.registerDevice(); // No await, let it run in the background
+    }
+  }
+
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri)) {
       throw Exception('Could not launch $url');
     }
+  }
+
+  Widget _buildGetStartedButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _isLoading ? AppColors.accentDark : AppColors.accent,
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      onPressed: _isLoading
+          ? null
+          : () {
+              setState(() {
+                _isLoading = true;
+              });
+              // Wait for registration to complete before navigating
+              DeviceService.registerDevice().then((_) {
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }
+              }).catchError((error) {
+                // Handle registration error if necessary
+                print("Registration failed: $error");
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                }
+              });
+            },
+      child: _isLoading
+          ? const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            )
+          : const Text(
+              'Get Started',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+    );
   }
 
   @override
@@ -186,8 +257,9 @@ class _SplashScreenState extends State<SplashScreen> {
       textAlign: TextAlign.center,
       text: TextSpan(
         style: const TextStyle(
-          color: AppColors.tertiaryText,
-          fontSize: 13,
+          color: AppColors.secondaryText,
+          fontSize: 14,
+          height: 1.5,
         ),
         children: [
           TextSpan(text: text),
@@ -197,61 +269,18 @@ class _SplashScreenState extends State<SplashScreen> {
               color: AppColors.accent,
               decoration: TextDecoration.underline,
             ),
-            recognizer: TapGestureRecognizer()..onTap = () => _launchURL(url),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGetStartedButton(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.3),
-            spreadRadius: 0,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _isLoading
-            ? null
-            : () async {
-                setState(() {
-                  _isLoading = true;
-                });
-                await Future.delayed(const Duration(milliseconds: 50));
-                if (!mounted) return;
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                );
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                _launchURL(url);
               },
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              _isLoading ? AppColors.buttonSecondary : AppColors.accent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
           ),
-        ),
-        child: const Text(
-          'Get Started',
-          style: TextStyle(
-            color: AppColors.buttonPrimaryText,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        ],
       ),
     );
   }
 }
 
+// Top-level class definition
 class BubbleTailPainter extends CustomPainter {
   final Color color;
 
@@ -259,24 +288,21 @@ class BubbleTailPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
     final path = Path();
     path.moveTo(size.width / 2 - 10, 0);
     path.lineTo(size.width / 2, size.height);
     path.lineTo(size.width / 2 + 10, 0);
     path.close();
+
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class NoGlowScrollBehavior extends ScrollBehavior {
-  const NoGlowScrollBehavior();
-  @override
-  Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
-    return child;
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
   }
 }
