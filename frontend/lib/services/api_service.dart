@@ -20,6 +20,11 @@ class ApiService {
 
   static const String _appSecret = String.fromEnvironment('APP_SECRET');
 
+  static String getSpeechUrl(String speechPath) {
+    // The speechPath already contains the leading slash.
+    return '$_baseUrl$speechPath';
+  }
+
   static Stream<String> chat(List<Message> messages, String deviceToken) async* {
     String lang = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
 

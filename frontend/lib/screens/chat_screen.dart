@@ -1,8 +1,11 @@
+
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shedidthat/l10n/app_localizations.dart';
 import '../models/message.dart';
-import '../services/api_exceptions.dart';
 import '../services/api_service.dart';
 import '../services/device_service.dart';
 import '../services/storage_service.dart';
@@ -10,7 +13,6 @@ import '../theme/app_colors.dart';
 import '../widgets/chat_bubble.dart';
 import 'package:shedidthat/screens/nag_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/jess_typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? conversationId;
@@ -26,9 +28,12 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   List<Message> _messages = [];
   String? _conversationId;
   bool _isSending = false;
+  bool _isMuted = false;
 
   @override
   void initState() {
@@ -37,7 +42,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_conversationId != null) {
       _loadMessages();
     } else {
-      // We need context for localization, so we delay this call.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startNewConversation();
       });
@@ -57,6 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -106,7 +111,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // New, simplified method to handle sending a message and streaming the response
+  Future<void> playSpeech(String speechPath) async {
+    if (_isMuted) return;
+    try {
+      final url = ApiService.getSpeechUrl(speechPath);
+      print('[ChatScreen] Playing speech from: $url');
+      // Stop any currently playing audio before starting new playback.
+      await _audioPlayer.stop();
+      await _audioPlayer.setUrl(url);
+      _audioPlayer.play();
+    } catch (e) {
+      print('[ChatScreen] Error playing speech: $e');
+      // Silent fail - never block UI
+    }
+  }
+
   Future<void> _handleSendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -119,40 +138,60 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _isSending = true;
       _messages.add(userMessage);
-      _messages.add(jessMessage); // Add empty bubble for Jess
+      _messages.add(jessMessage);
     });
 
     _controller.clear();
     _scrollToBottom();
 
-    // Save conversation early
     if (_conversationId == null) {
       _conversationId = await _storageService.newConversation();
     }
-    // Save user message immediately
     await _saveConversation();
 
     try {
       final deviceId = await DeviceService.getDeviceToken();
-      // Take the last 20 messages to send as context.
       final history = _messages.length > 20 ? _messages.sublist(_messages.length - 20) : _messages;
       print('[ChatScreen] Sending ${history.length} messages to API.');
       final stream = ApiService.chat(history, deviceId);
 
-      // Listen to the stream and update the UI
+      String? speechUrl;
+
       await for (final chunk in stream) {
-        print('[ChatScreen] Stream chunk received: "$chunk"');
-        setState(() {
-          jessMessage.content += chunk;
-        });
-        _scrollToBottom();
+        // SSE streams can send multiple events in one chunk.
+        final lines = chunk.split('\n').where((line) => line.isNotEmpty).toList();
+
+        for (final line in lines) {
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6);
+            if (data.isEmpty) continue;
+
+            try {
+              final decodedChunk = jsonDecode(data);
+
+              if (decodedChunk['done'] == true) {
+                speechUrl = decodedChunk['speechUrl'];
+                // Don't break here; process all lines in the chunk.
+              } else if (decodedChunk['content'] != null) {
+                setState(() {
+                  jessMessage.content += decodedChunk['content'];
+                });
+                _scrollToBottom();
+              }
+            } catch (e) {
+              print('[ChatScreen] Could not decode stream data JSON: $data');
+            }
+          }
+        }
       }
 
       print('[ChatScreen] Stream finished.');
-      // After stream is complete, save the final message
       await _saveConversation();
 
-      // Check if we should show the nag screen
+      if (speechUrl != null) {
+        await playSpeech(speechUrl);
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final shouldShowNag = (prefs.getInt('requestCount') ?? 0) % 3 == 0;
       if (shouldShowNag && mounted) {
@@ -166,7 +205,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         jessMessage.content = AppLocalizations.of(context)!.chatScreenErrorJessProblem;
       });
-      // Save the error message
       await _saveConversation();
     } finally {
       setState(() {
@@ -183,21 +221,54 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.chatScreenTitle),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(8.0),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  return ChatBubble(message: _messages[index]);
-                },
-              ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 60.0), // Add padding to bottom
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return ChatBubble(message: _messages[index]);
+                    },
+                  ),
+                ),
+                _buildMessageInput(),
+              ],
             ),
-            _buildMessageInput(),
-          ],
+          ),
+          _buildMuteButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMuteButton() {
+    return Positioned(
+      top: 8,
+      right: 16,
+      child: SafeArea(
+        child: GestureDetector(
+          onTap: () {
+            setState(() => _isMuted = !_isMuted);
+            if (_isMuted) {
+              _audioPlayer.stop();
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _isMuted ? Icons.volume_off : Icons.volume_up,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );
