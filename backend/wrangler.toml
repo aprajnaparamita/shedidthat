@@ -14,3 +14,8 @@ compatibility_date = "2023-10-30"
 [[kv_namespaces]]
 binding = "DEVICE_KV"
 id = "2b813868b3bd42239687501e2d40e715"
+
+[text_blobs]
+PERSONA_EN = "./persona.en.md"
+PERSONA_ZH = "./persona.zh.md"
+PERSONA_TH = "./persona.th.md"

@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
 import 'package:shedidthat/screens/home_screen.dart';
 import 'package:shedidthat/services/device_service.dart';
 import 'package:shedidthat/theme/app_colors.dart';
@@ -83,9 +84,9 @@ class _SplashScreenState extends State<SplashScreen> {
           ? const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             )
-          : const Text(
-              'Get Started',
-              style: TextStyle(
+          : Text(
+              AppLocalizations.of(context)!.getStartedButton,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -130,9 +131,9 @@ class _SplashScreenState extends State<SplashScreen> {
                       }),
                     ),
                     const SizedBox(height: 16),
-                    const AutoSizeText(
-                      'She Absolutely Just Did That',
-                      style: TextStyle(
+                    AutoSizeText(
+                      AppLocalizations.of(context)!.splashTitle,
+                      style: const TextStyle(
                         color: AppColors.accent,
                         fontWeight: FontWeight.bold,
                         fontSize: 28,
@@ -146,29 +147,29 @@ class _SplashScreenState extends State<SplashScreen> {
                     const SizedBox(height: 24),
                     _buildInfoBubble(context),
                     const SizedBox(height: 24),
-                    const Text(
-                      '🔒 Your Privacy Matters',
+                    Text(
+                      AppLocalizations.of(context)!.privacyTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.secondaryText,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.',
+                    Text(
+                      AppLocalizations.of(context)!.privacyText,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.secondaryText,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _buildGithubButton(),
+                    _buildGithubButton(context),
                     const SizedBox(height: 16),
                     _buildRichText(
-                      'Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ',
+                      AppLocalizations.of(context)!.createdByText,
                       'darabuilds.tech/dating',
                       'https://darabuilds.tech/dating',
                     ),
@@ -200,10 +201,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppColors.jessBubbleBackground,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                "Your situationship just did something unhinged and you need to debrief immediately. Jess is available. An AI best friend who's always awake, always invested, and has genuinely been waiting by the phone. Great questions. Zero judgment. Official ratings. She picked up on the first ring. Start talking.",
+              child: Text(
+                AppLocalizations.of(context)!.splashBubbleText,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.splashBubbleText,
                   fontSize: 16,
                   height: 1.4,
@@ -234,14 +235,14 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  Widget _buildGithubButton() {
+  Widget _buildGithubButton(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: () => _launchURL('https://github.com/aprajnaparamita/shedidthat'),
       icon: SvgPicture.asset(
         'assets/GitHub_Lockup_Black_Clearspace.svg',
         height: 24,
       ),
-      label: const Text('View on GitHub'),
+      label: Text(AppLocalizations.of(context)!.githubButton),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -259,20 +260,13 @@ class _SplashScreenState extends State<SplashScreen> {
         style: const TextStyle(
           color: AppColors.secondaryText,
           fontSize: 14,
-          height: 1.5,
         ),
-        children: [
+        children: <TextSpan>[
           TextSpan(text: text),
           TextSpan(
             text: linkText,
-            style: const TextStyle(
-              color: AppColors.accent,
-              decoration: TextDecoration.underline,
-            ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                _launchURL(url);
-              },
+            style: const TextStyle(color: AppColors.accent, decoration: TextDecoration.underline),
+            recognizer: TapGestureRecognizer()..onTap = () => _launchURL(url),
           ),
         ],
       ),
@@ -280,7 +274,6 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// Top-level class definition
 class BubbleTailPainter extends CustomPainter {
   final Color color;
 

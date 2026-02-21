@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
 import '../models/message.dart';
 import '../services/api_exceptions.dart';
 import '../services/api_service.dart';
@@ -39,7 +40,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_conversationId != null) {
       _loadMessages();
     } else {
-      _startNewConversation();
+      // We need context for localization, so we delay this call.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startNewConversation();
+      });
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -84,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _startNewConversation() async {
     final welcomeMessage = Message(
       role: 'assistant',
-      content: "Hey bestie! So glad you're here. What's on your mind?",
+      content: AppLocalizations.of(context)!.chatScreenWelcomeMessage,
       timestamp: DateTime.now(),
     );
     setState(() {
@@ -166,7 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (e) {
       print('[ChatScreen] An unexpected error occurred: $e');
-      final errorMessage = Message(role: 'assistant', content: 'An unexpected error occurred. Please try again.', timestamp: DateTime.now());
+      final errorMessage = Message(role: 'assistant', content: AppLocalizations.of(context)!.chatScreenErrorUnexpected, timestamp: DateTime.now());
       setState(() {
         _messages.add(errorMessage);
         _isJessTyping = false;
@@ -184,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Second failure: show message and wait
       print('[ChatScreen] Second attempt failed. Waiting 3 seconds.');
       setState(() {
-        _uiMessage = 'One moment, this is taking longer than normal';
+        _uiMessage = AppLocalizations.of(context)!.chatScreenErrorRetryInProgress;
       });
       await Future.delayed(const Duration(seconds: 3));
       await DeviceService.registerDevice();
@@ -193,7 +197,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Third failure: give up
       print('[ChatScreen] Final attempt failed. Showing error to user.');
       setState(() {
-        _uiMessage = 'Jess is having a problem.';
+        _uiMessage = AppLocalizations.of(context)!.chatScreenErrorJessProblem;
         _isJessTyping = false;
       });
       // After a delay, clear the error to allow the user to try again
@@ -212,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.screenBackground,
       appBar: AppBar(
-        title: const Text('Debrief'),
+        title: Text(AppLocalizations.of(context)!.chatScreenTitle),
       ),
       body: SafeArea(
         child: Column(
@@ -255,8 +259,8 @@ class _ChatScreenState extends State<ChatScreen> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
-              decoration: const InputDecoration(
-                hintText: 'Spill the tea...',
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.chatScreenHintText,
               ),
               enabled: !_isSending && !_isJessTyping,
               onSubmitted: (value) => _handleSendMessage(),

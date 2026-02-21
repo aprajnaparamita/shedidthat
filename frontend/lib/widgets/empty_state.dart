@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 
 class EmptyState extends StatelessWidget {
@@ -18,12 +19,12 @@ class EmptyState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'No debriefs yet.',
+            AppLocalizations.of(context)!.emptyStateTitle,
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'What are you waiting for?',
+            AppLocalizations.of(context)!.emptyStateSubtitle,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
@@ -33,7 +34,7 @@ class EmptyState extends StatelessWidget {
               backgroundColor:
                   isLoading ? AppColors.buttonSecondary : AppColors.accent,
             ),
-            child: const Text('Start Debriefing'),
+            child: Text(AppLocalizations.of(context)!.emptyStateButton),
           ),
         ],
       ),

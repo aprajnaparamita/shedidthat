@@ -1,0 +1,20 @@
+
+{
+  "appTitle": "她绝对是故意的",
+  "splashTitle": "她绝对是故意的",
+  "splashBubbleText": "你的暧昧对象刚做了一件让你抓狂的事，你需要立刻吐槽。Jess随时待命。一个AI闺蜜，永远在线，永远投入，真心实意地在电话旁等着你。好问题。零评判。官方评级。她第一声就接了。开始聊吧。",
+  "privacyTitle": "🔒 你的隐私很重要",
+  "privacyText": "所有对话只存储在你的设备本地。没有账户。没有云存储。没有数据收集。当你删除应用程序时，一切都会随之消失。",
+  "githubButton": "在GitHub上查看",
+  "createdByText": "由独立女同性恋开发者Janet Jeffus创建。\n了解更多：",
+  "getStartedButton": "开始",
+  "chatScreenTitle": "汇报情况",
+  "chatScreenHintText": "有什么瓜，说来听听...",
+  "chatScreenWelcomeMessage": "嘿，闺蜜！很高兴你来了。在想什么呢？",
+  "chatScreenErrorUnexpected": "发生了意外错误。请再试一次。",
+  "chatScreenErrorRetryInProgress": "请稍等，处理时间比平时长一些",
+  "chatScreenErrorJessProblem": "Jess现在有点问题。",
+  "emptyStateTitle": "还没有任何汇报。",
+  "emptyStateSubtitle": "你还在等什么？",
+  "emptyStateButton": "开始汇报"
+}

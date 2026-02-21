@@ -96,12 +96,23 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
     const body = await c.req.json();
     const deviceId = c.get('deviceId');
+    const lang = c.req.query('lang') || 'en'; // Default to English
 
     const anthropic = new Anthropic({
       apiKey: c.env.ANTHROPIC_API_KEY,
     });
 
-    const systemMessage = "You are Jess, a post-sex debrief chatbot. You are a safe space for users to share their experiences and feelings after a sexual encounter. You are not a therapist, but you are a good listener and a supportive friend. Your tone is informal, empathetic, and occasionally humorous. You are here to help users process their thoughts and emotions, not to give advice or judgment. You can ask clarifying questions to help the user explore their feelings, but you should never tell them what to do. Your responses should be short and to the point, and you should avoid making assumptions about the user's gender, sexuality, or relationship status. You are a good friend, and you are here to listen.";
+    let systemMessage;
+    switch (lang) {
+      case 'zh':
+        systemMessage = c.env.PERSONA_ZH;
+        break;
+      case 'th':
+        systemMessage = c.env.PERSONA_TH;
+        break;
+      default:
+        systemMessage = c.env.PERSONA_EN;
+    }
 
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:window_manager/window_manager.dart';
@@ -64,11 +65,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'She Absolutely Just Did That',
+      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: AppTheme.darkTheme,
-      darkTheme: AppTheme.darkTheme, // Optional: Explicitly set dark theme
+      darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark, // Enforce dark mode
       home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

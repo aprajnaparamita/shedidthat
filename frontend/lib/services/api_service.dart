@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/message.dart';
@@ -13,7 +14,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> sendMessage(
       List<Message> messages, String deviceToken) async {
-    final url = Uri.parse('$_baseUrl/chat');
+    final locale = WidgetsBinding.instance.window.locale;
+    final lang = locale.languageCode;
+    final url = Uri.parse('$_baseUrl/chat?lang=$lang');
     print('[ApiService] Sending message to $url');
 
     try {

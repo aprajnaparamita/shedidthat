@@ -1,0 +1,20 @@
+
+{
+  "appTitle": "She Absolutely Just Did That",
+  "splashTitle": "She Absolutely Just Did That",
+  "splashBubbleText": "Your situationship just did something unhinged and you need to debrief immediately. Jess is available. An AI best friend who's always awake, always invested, and has genuinely been waiting by the phone. Great questions. Zero judgment. Official ratings. She picked up on the first ring. Start talking.",
+  "privacyTitle": "🔒 Your Privacy Matters",
+  "privacyText": "All conversations are stored locally on your device only. No accounts. No cloud storage. No data collection. When you delete the app, everything goes with it.",
+  "githubButton": "View on GitHub",
+  "createdByText": "Created by Janet Jeffus, a solo lesbian developer.\nLearn more: ",
+  "getStartedButton": "Get Started",
+  "chatScreenTitle": "Debrief",
+  "chatScreenHintText": "Spill the tea...",
+  "chatScreenWelcomeMessage": "Hey bestie! So glad you're here. What's on your mind?",
+  "chatScreenErrorUnexpected": "An unexpected error occurred. Please try again.",
+  "chatScreenErrorRetryInProgress": "One moment, this is taking longer than normal",
+  "chatScreenErrorJessProblem": "Jess is having a problem.",
+  "emptyStateTitle": "No debriefs yet.",
+  "emptyStateSubtitle": "What are you waiting for?",
+  "emptyStateButton": "Start Debriefing"
+}
