@@ -95,10 +95,10 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
     const deviceId = c.get('deviceId');
     const lang = c.req.query('lang') || 'en';
-    console.error(`[CHAT] Received request for device: ${deviceId}, lang: ${lang}`);
+    console.log(`[CHAT] Received request for device: ${deviceId}, lang: ${lang}`);
 
     const { messages: messageHistory } = await c.req.json();
-    console.error(`[CHAT] Received ${messageHistory.length} messages in history.`);
+    console.log(`[CHAT] Received ${messageHistory.length} messages in history.`);
 
     if (!messageHistory || messageHistory.length === 0) {
       return c.json({ error: "Messages are required." }, 400);
@@ -112,23 +112,23 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     switch (lang) {
       case 'zh':
         systemMessage = c.env.PERSONA_ZH;
-        console.error("[CHAT] Using Chinese persona.");
+        console.log("[CHAT] Using Chinese persona.");
         break;
       case 'th':
         systemMessage = c.env.PERSONA_TH;
-        console.error("[CHAT] Using Thai persona.");
+        console.log("[CHAT] Using Thai persona.");
         break;
       case 'en':
       default:
         systemMessage = c.env.PERSONA_EN;
-        console.error("[CHAT] Using English persona.");
+        console.log("[CHAT] Using English persona.");
         break;
     }
 
 
 
     try {
-      console.error("[CHAT] Sending request to Anthropic API...");
+      console.log("[CHAT] Sending request to Anthropic API...");
       const stream = await anthropic.messages.stream({
         model: "claude-3-haiku-20240307",
         max_tokens: 1024,
@@ -144,10 +144,10 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
         try {
           for await (const chunk of stream) {
             if (chunk.type === 'content_block_delta') {
-              const text = chunk.delta.text;
-              console.error(`[CHAT] AI chunk received: "${text}"`);
-              await writer.write(new TextEncoder().encode(text));
-            }
+                        const text = chunk.delta.text;
+                        console.log(`[CHAT] AI chunk received: "${text}"`);
+                        await writer.write(new TextEncoder().encode(text));
+                      }
           }
         } catch (e) {
           console.error("[CHAT] Streaming error:", e);
