@@ -9,10 +9,9 @@ const app = new Hono();
 
 // Enable CORS for all routes to allow requests from your frontend.
 app.use('/*', cors({
-  origin: [
-    'https://shedidthat.app',
-    'https://shedidthat.pages.dev'
-  ]
+  origin: '*',
+  allowHeaders: ['Content-Type', 'X-App-Secret', 'X-Device-Id'],
+  allowMethods: ['POST', 'GET', 'OPTIONS'],
 }));
 
 // Authentication Middleware: Checks for a valid secret and registered device.
@@ -94,9 +93,16 @@ app.post('/register', async (c) => {
 // POST /chat: Handles chat messages, protected by auth and rate limiting.
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
-    const body = await c.req.json();
     const deviceId = c.get('deviceId');
-    const lang = c.req.query('lang') || 'en'; // Default to English
+    const lang = c.req.query('lang') || 'en';
+    console.error(`[CHAT] Received request for device: ${deviceId}, lang: ${lang}`);
+
+    const { messages: messageHistory } = await c.req.json();
+    console.error(`[CHAT] Received ${messageHistory.length} messages in history.`);
+
+    if (!messageHistory || messageHistory.length === 0) {
+      return c.json({ error: "Messages are required." }, 400);
+    }
 
     const anthropic = new Anthropic({
       apiKey: c.env.ANTHROPIC_API_KEY,
@@ -106,24 +112,64 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     switch (lang) {
       case 'zh':
         systemMessage = c.env.PERSONA_ZH;
+        console.error("[CHAT] Using Chinese persona.");
         break;
       case 'th':
         systemMessage = c.env.PERSONA_TH;
+        console.error("[CHAT] Using Thai persona.");
         break;
+      case 'en':
       default:
         systemMessage = c.env.PERSONA_EN;
+        console.error("[CHAT] Using English persona.");
+        break;
     }
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1024,
-      system: systemMessage,
-      messages: body.messages,
-    });
 
-    const reply = response.content[0].text;
 
-    return c.json({ reply });
+    try {
+      console.error("[CHAT] Sending request to Anthropic API...");
+      const stream = await anthropic.messages.stream({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 1024,
+        messages: messageHistory,
+        system: systemMessage,
+      });
+
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+
+      // Asynchronously process the stream from Anthropic and pipe it to the client.
+      (async () => {
+        try {
+          for await (const chunk of stream) {
+            if (chunk.type === 'content_block_delta') {
+              const text = chunk.delta.text;
+              console.error(`[CHAT] AI chunk received: "${text}"`);
+              await writer.write(new TextEncoder().encode(text));
+            }
+          }
+        } catch (e) {
+          console.error("[CHAT] Streaming error:", e);
+          // Close the writer on error to prevent the client from hanging.
+          await writer.close();
+        } finally {
+          console.log("[CHAT] Finished streaming from AI.");
+          await writer.close();
+        }
+      })();
+
+      return c.body(readable, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    } catch (error) {
+      console.error("[CHAT] Error calling Anthropic API:", error);
+      return c.json({ error: "Failed to get response from AI." }, 500);
+    }
   } catch (error) {
     console.error('Chat error:', error);
     return c.json({ error: 'An error occurred during the chat.' }, 500);

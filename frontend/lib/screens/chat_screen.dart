@@ -9,6 +9,7 @@ import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/chat_bubble.dart';
 import 'package:shedidthat/screens/nag_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/jess_typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -27,11 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _focusNode = FocusNode();
   List<Message> _messages = [];
   String? _conversationId;
-  bool _isJessTyping = false;
   bool _isSending = false;
-
-  // New state for retry logic
-  String? _uiMessage;
 
   @override
   void initState() {
@@ -78,10 +75,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
+    print('[ChatScreen] Loading conversation: $_conversationId');
     final messages = await _storageService.loadConversation(_conversationId!);
     setState(() {
       _messages = messages;
     });
+    if (messages.isNotEmpty) {
+      print('[ChatScreen] Loaded ${messages.length} messages.');
+    } else {
+      print('[ChatScreen] No previous messages found for this conversation.');
+    }
     _scrollToBottom();
   }
 
@@ -96,17 +99,27 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Main method to handle sending a message
+  Future<void> _saveConversation() async {
+    if (_conversationId != null) {
+      print('[ChatScreen] Saving ${_messages.length} messages to conversation: $_conversationId');
+      await _storageService.saveConversation(_conversationId!, _messages);
+    }
+  }
+
+  // New, simplified method to handle sending a message and streaming the response
   Future<void> _handleSendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    print('[ChatScreen] Handling message: "$text"');
+
     final userMessage = Message(role: 'user', content: text, timestamp: DateTime.now());
+    final jessMessage = Message(role: 'assistant', content: '', timestamp: DateTime.now());
 
     setState(() {
       _isSending = true;
-      _uiMessage = null; // Clear previous messages
       _messages.add(userMessage);
+      _messages.add(jessMessage); // Add empty bubble for Jess
     });
 
     _controller.clear();
@@ -116,98 +129,50 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_conversationId == null) {
       _conversationId = await _storageService.newConversation();
     }
-    await _storageService.saveConversation(_conversationId!, _messages);
+    // Save user message immediately
+    await _saveConversation();
 
     try {
-      await _trySendMessageWithRetries(userMessage);
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-      _focusNode.requestFocus();
-    }
-  }
+      final deviceId = await DeviceService.getDeviceToken();
+      // Take the last 20 messages to send as context.
+      final history = _messages.length > 20 ? _messages.sublist(_messages.length - 20) : _messages;
+      print('[ChatScreen] Sending ${history.length} messages to API.');
+      final stream = ApiService.chat(history, deviceId);
 
-  // Recursive method to handle retries
-  Future<void> _trySendMessageWithRetries(Message userMessage, {int attempt = 1}) async {
-    setState(() {
-      _isJessTyping = true;
-    });
+      // Listen to the stream and update the UI
+      await for (final chunk in stream) {
+        print('[ChatScreen] Stream chunk received: "$chunk"');
+        setState(() {
+          jessMessage.content += chunk;
+        });
+        _scrollToBottom();
+      }
 
-    try {
-      final deviceToken = await DeviceService.getDeviceToken();
-      final response = await ApiService.sendMessage(_messages, deviceToken);
-      final reply = response['reply'];
-      final shouldShowNag = response['shouldShowNag'] ?? false;
+      print('[ChatScreen] Stream finished.');
+      // After stream is complete, save the final message
+      await _saveConversation();
 
-      final jessMessage = Message(role: 'assistant', content: reply, timestamp: DateTime.now());
-
-      setState(() {
-        _messages.add(jessMessage);
-        _isJessTyping = false;
-        _uiMessage = null; // Clear any messages
-      });
-
-      await _storageService.saveConversation(_conversationId!, _messages);
-      _scrollToBottom();
-
+      // Check if we should show the nag screen
+      final prefs = await SharedPreferences.getInstance();
+      final shouldShowNag = (prefs.getInt('requestCount') ?? 0) % 3 == 0;
       if (shouldShowNag && mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const NagScreen()),
         );
       }
-    } on RegistrationException catch (e) {
-      print('[ChatScreen] Attempt $attempt failed with RegistrationException: $e');
-      await _handleRetry(userMessage, attempt, e);
-    } on NetworkException catch (e) {
-      print('[ChatScreen] Attempt $attempt failed with NetworkException: $e');
-      await _handleRetry(userMessage, attempt, e);
-    } on RateLimitException catch (e) {
-      final errorMessage = Message(role: 'assistant', content: e.message, timestamp: DateTime.now());
-      setState(() {
-        _messages.add(errorMessage);
-        _isJessTyping = false;
-      });
-    } catch (e) {
-      print('[ChatScreen] An unexpected error occurred: $e');
-      final errorMessage = Message(role: 'assistant', content: AppLocalizations.of(context)!.chatScreenErrorUnexpected, timestamp: DateTime.now());
-      setState(() {
-        _messages.add(errorMessage);
-        _isJessTyping = false;
-      });
-    }
-  }
 
-  Future<void> _handleRetry(Message userMessage, int attempt, Exception e) async {
-    if (attempt == 1) {
-      // First failure: silent retry
-      print('[ChatScreen] Silently attempting to re-register and retry.');
-      await DeviceService.registerDevice();
-      await _trySendMessageWithRetries(userMessage, attempt: 2);
-    } else if (attempt == 2) {
-      // Second failure: show message and wait
-      print('[ChatScreen] Second attempt failed. Waiting 3 seconds.');
+    } catch (e) {
+      print('[ChatScreen] An error occurred during streaming: $e');
       setState(() {
-        _uiMessage = AppLocalizations.of(context)!.chatScreenErrorRetryInProgress;
+        jessMessage.content = AppLocalizations.of(context)!.chatScreenErrorJessProblem;
       });
-      await Future.delayed(const Duration(seconds: 3));
-      await DeviceService.registerDevice();
-      await _trySendMessageWithRetries(userMessage, attempt: 3);
-    } else {
-      // Third failure: give up
-      print('[ChatScreen] Final attempt failed. Showing error to user.');
+      // Save the error message
+      await _saveConversation();
+    } finally {
       setState(() {
-        _uiMessage = AppLocalizations.of(context)!.chatScreenErrorJessProblem;
-        _isJessTyping = false;
+        _isSending = false;
       });
-      // After a delay, clear the error to allow the user to try again
-      Future.delayed(const Duration(seconds: 5), () {
-        if (mounted) {
-          setState(() {
-            _uiMessage = null;
-          });
-        }
-      });
+      _focusNode.requestFocus();
     }
   }
 
@@ -225,24 +190,12 @@ class _ChatScreenState extends State<ChatScreen> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(8.0),
-                itemCount: _messages.length + (_isJessTyping ? 1 : 0),
+                itemCount: _messages.length,
                 itemBuilder: (context, index) {
-                  if (_isJessTyping && index == _messages.length) {
-                    return const JessTypingIndicator();
-                  }
                   return ChatBubble(message: _messages[index]);
                 },
               ),
             ),
-            if (_uiMessage != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  _uiMessage!,
-                  style: const TextStyle(color: AppColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-              ),
             _buildMessageInput(),
           ],
         ),
@@ -262,13 +215,13 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.chatScreenHintText,
               ),
-              enabled: !_isSending && !_isJessTyping,
+              enabled: !_isSending,
               onSubmitted: (value) => _handleSendMessage(),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            onPressed: _isSending || _isJessTyping ? null : _handleSendMessage,
+            onPressed: _isSending ? null : _handleSendMessage,
             color: _isSending ? AppColors.buttonSecondary : AppColors.accent,
           ),
         ],

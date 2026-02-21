@@ -107,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           TextButton(
                             onPressed: () async {
                               await _storageService.clearAll();
-                              await DeviceService.clearRegistration();
                               _loadConversations();
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
