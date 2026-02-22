@@ -30,11 +30,17 @@ app.use(async (c, next) => {
 // --- Middleware ---
 
 app.onError((err, c) => {
-  // Reuse the Sentry instance from the middleware, if it exists.
-  // Toucan internally uses `waitUntil` on the execution context passed during initialization.
-  c.get('sentry')?.captureException(err);
+  try {
+    const sentry = c.get('sentry');
+    if (sentry) {
+      sentry.captureException(err);
+    }
+  } catch (e) {
+    console.error('Failed to capture Sentry exception:', e);
+  }
   return c.text('Internal Server Error', 500);
 });
+
 
 app.use('/*', cors({
   origin: '*',
