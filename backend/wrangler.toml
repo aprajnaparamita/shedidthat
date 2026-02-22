@@ -12,6 +12,7 @@ compatibility_date = "2023-10-30"
 [[rules]]
 type = "Text"
 globs = ["**/*.md"]
+fallthrough = false
 
 # This section defines the binding to your Cloudflare KV namespace.
 # Wrangler will automatically create a local version for development.
