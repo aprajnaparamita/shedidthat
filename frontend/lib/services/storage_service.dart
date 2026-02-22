@@ -1,60 +1,96 @@
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/message.dart';
 
 class StorageService {
-  static const _indexKey = 'conversation_index';
+  static const String _isLocalModeKey = 'isLocalMode';
+  static const String _deepseekApiKey = 'DEEPSEEK_API_TOKEN';
+  static const String _googleApiKey = 'GOOGLE_TEXT_API_KEY';
 
-  Future<String> newConversation() async {
+  Future<void> saveIsLocalMode(bool isLocalMode) async {
     final prefs = await SharedPreferences.getInstance();
-    final index = prefs.getStringList(_indexKey) ?? [];
-    final newId = Uuid().v4();
-    index.insert(0, newId);
-    await prefs.setStringList(_indexKey, index);
-    return newId;
+    await prefs.setBool(_isLocalModeKey, isLocalMode);
   }
 
-  Future<void> saveConversation(String id, List<Message> messages) async {
+  Future<bool> getIsLocalMode() async {
     final prefs = await SharedPreferences.getInstance();
-    final messagesJson = messages.map((m) => jsonEncode(m.toStorage())).toList();
-    await prefs.setStringList(id, messagesJson);
+    return prefs.getBool(_isLocalModeKey) ?? false;
   }
 
-  Future<List<Message>> loadConversation(String id) async {
+  Future<void> saveApiKeys({
+    String? deepseek,
+    String? google,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    final messagesJson = prefs.getStringList(id) ?? [];
-    return messagesJson.map((m) => Message.fromStorage(jsonDecode(m))).toList();
-  }
-
-  Future<List<String>> getAllConversationIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_indexKey) ?? [];
-  }
-
-  Future<String> getConversationPreview(String id) async {
-    final messages = await loadConversation(id);
-    final firstUserMessage = messages.firstWhere((m) => m.role == 'user', orElse: () => Message(role: 'user', content: '', timestamp: DateTime.now()));
-    if (firstUserMessage.content.length > 50) {
-      return '${firstUserMessage.content.substring(0, 50)}...';
+    if (deepseek != null) {
+      await prefs.setString(_deepseekApiKey, deepseek);
     }
-    return firstUserMessage.content;
+    if (google != null) {
+      await prefs.setString(_googleApiKey, google);
+    }
   }
 
-  Future<void> deleteConversation(String id) async {
+  Future<String?> getDeepseekApiKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final index = prefs.getStringList(_indexKey) ?? [];
-    index.remove(id);
-    await prefs.setStringList(_indexKey, index);
-    await prefs.remove(id);
+    return prefs.getString(_deepseekApiKey);
+  }
+
+  Future<String?> getGoogleApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_googleApiKey);
   }
 
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
-    final index = prefs.getStringList(_indexKey) ?? [];
-    for (final id in index) {
-      await prefs.remove(id);
-    }
-    await prefs.remove(_indexKey);
+    await prefs.clear();
+  }
+
+  // Conversation Management
+
+  static const _conversationIdsKey = 'conversation_ids';
+  static const _uuid = Uuid();
+
+  Future<String> newConversation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_conversationIdsKey) ?? [];
+    final newId = _uuid.v4();
+    await prefs.setStringList(_conversationIdsKey, [newId, ...ids]);
+    return newId;
+  }
+
+  Future<List<String>> getAllConversationIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_conversationIdsKey) ?? [];
+  }
+
+  Future<String> getConversationPreview(String id) async {
+    final messages = await loadConversation(id);
+    if (messages.isEmpty) return 'Empty conversation';
+    return messages.first.content;
+  }
+
+  Future<void> deleteConversation(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_conversationIdsKey) ?? [];
+    ids.remove(id);
+    await prefs.setStringList(_conversationIdsKey, ids);
+    await prefs.remove('convo_$id');
+  }
+
+  Future<List<Message>> loadConversation(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('convo_$id');
+    if (raw == null) return [];
+    final list = jsonDecode(raw) as List;
+    return list.map((m) => Message.fromStorage(m as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> saveConversation(String id, List<Message> messages) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = jsonEncode(messages.map((m) => m.toStorage()).toList());
+    await prefs.setString('convo_$id', raw);
   }
 }
