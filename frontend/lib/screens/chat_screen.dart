@@ -207,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final shouldShowNag = (prefs.getInt('requestCount') ?? 0) % 3 == 0;
+      final shouldShowNag = (prefs.getInt('requestCount') ?? 0) % 8 == 0;
       if (shouldShowNag && mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const NagScreen()),

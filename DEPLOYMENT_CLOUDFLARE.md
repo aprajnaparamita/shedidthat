@@ -53,7 +53,7 @@ id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # ← Paste your ID here
 
 ### Step 4: Set Production Secrets
 
-Your worker needs two secrets to run in production. Set them using the following commands. Replace the placeholder values with your actual secrets.
+Your worker needs three secrets to run in production. Set them using the following commands. Replace the placeholder values with your actual secrets. GOOGLE_TEXT_API_KEY is for Google's Cloud Text-To-Speech
 
 ```bash
 # Run these commands from the /backend directory
@@ -62,6 +62,11 @@ wrangler secret put APP_SECRET
 
 wrangler secret put ANTHROPIC_API_KEY
 # (You will be prompted to enter the secret value)
+
+wrangler kv namespace create SPEECH_CACHE
+wrangler secret put GOOGLE_TEXT_API_KEY
+# (You will be prompted to enter the secret value)
+
 ```
 
 ### Step 5: Deploy!

@@ -16,5 +16,12 @@
   "chatScreenErrorJessProblem": "Jess现在有点问题。",
   "emptyStateTitle": "还没有任何汇报。",
   "emptyStateSubtitle": "你还在等什么？",
-  "emptyStateButton": "开始汇报"
+  "emptyStateButton": "开始汇报",
+  "nagTitle": "支持开发者",
+  "nagBody": "这个应用是免费、开源的，由一个人深夜打造，因为萨福会希望这样。\n\n如果它让你笑了，考虑给我买杯咖啡吧。每一份支持都很有帮助。",
+  "nagRevolutButton": "使用Revolut发送",
+  "nagPromptPayButton": "使用泰国PromptPay发送",
+  "nagBankTransferButton": "银行转账",
+  "nagDismissButton": "今天不了？没关系。Jess哪儿也不去。",
+  "nagBubbleText": "你太棒了！"
 }

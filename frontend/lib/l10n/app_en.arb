@@ -16,5 +16,12 @@
   "chatScreenErrorJessProblem": "Jess is having a problem.",
   "emptyStateTitle": "No debriefs yet.",
   "emptyStateSubtitle": "What are you waiting for?",
-  "emptyStateButton": "Start Debriefing"
+  "emptyStateButton": "Start Debriefing",
+  "nagTitle": "Support the Developer",
+  "nagBody": "This app is free, open source, and built by one person late at night because Sappho would have wanted this.\n\nIf it made you smile, consider buying me a coffee. Every bit helps.",
+  "nagRevolutButton": "Send with Revolut",
+  "nagPromptPayButton": "Send with Thai PromptPay",
+  "nagBankTransferButton": "Bank Transfer",
+  "nagDismissButton": "Not today? No worries. Jess isn\'t going anywhere.",
+  "nagBubbleText": "You\'re amazing!"
 }

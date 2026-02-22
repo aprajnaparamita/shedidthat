@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shedidthat/screens/bank_transfer_screen.dart';
 import 'package:shedidthat/screens/promptpay_screen.dart';
 import 'package:shedidthat/theme/app_colors.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class NagScreen extends StatelessWidget {
   const NagScreen({super.key});
@@ -40,19 +41,19 @@ class NagScreen extends StatelessWidget {
                 SizedBox(height: constraints.maxHeight * 0.05),
                 _buildDivider(),
                 const SizedBox(height: 24),
-                const Text(
-                  'Support the Developer',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.nagTitle,
+                  style: const TextStyle(
                     color: AppColors.accent,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'This app is free, open source, and built by one person late at night because Sappho would have wanted this.\n\nIf it made you smile, consider buying me a coffee. Every bit helps.',
+                Text(
+                  AppLocalizations.of(context)!.nagBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primaryText,
                     fontSize: 16,
                     height: 1.5,
@@ -69,10 +70,10 @@ class NagScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'Not today? No worries. Jess isn\'t going anywhere.',
+                  child: Text(
+                    AppLocalizations.of(context)!.nagDismissButton,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.secondaryText,
                       fontSize: 14,
                     ),
@@ -116,9 +117,9 @@ class NagScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Text(
-                      'You\'re amazing!',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context)!.nagBubbleText,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -151,7 +152,7 @@ class NagScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       ),
       onPressed: () => _launchURL('https://revolut.me/janetbocr'),
-      child: const Text('Send with Revolut', style: TextStyle(fontSize: 16)),
+      child: Text(AppLocalizations.of(context)!.nagRevolutButton, style: const TextStyle(fontSize: 16)),
     );
   }
 
@@ -168,7 +169,7 @@ class NagScreen extends StatelessWidget {
           MaterialPageRoute(builder: (context) => const PromptPayScreen()),
         );
       },
-      child: const Text('Send with Thai PromptPay', style: TextStyle(fontSize: 16)),
+      child: Text(AppLocalizations.of(context)!.nagPromptPayButton, style: const TextStyle(fontSize: 16)),
     );
   }
 
@@ -185,7 +186,7 @@ class NagScreen extends StatelessWidget {
           MaterialPageRoute(builder: (context) => const BankTransferScreen()),
         );
       },
-      child: const Text('Bank Transfer', style: TextStyle(fontSize: 16)),
+      child: Text(AppLocalizations.of(context)!.nagBankTransferButton, style: const TextStyle(fontSize: 16)),
     );
   }
 }
