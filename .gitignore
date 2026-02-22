@@ -13,7 +13,6 @@ migrate_working_dir/
 .env
 .wrangler
 node_modules
-frontend/build/
 run_dev.sh
 
 # IntelliJ related
@@ -34,7 +33,6 @@ run_dev.sh
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
 /coverage/
 
 # Symbolication related
