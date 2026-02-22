@@ -112,14 +112,24 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> playSpeech(String speechPath) async {
-    if (_isMuted) return;
+    print('[ChatScreen] playSpeech called with path: $speechPath');
+    if (_isMuted) {
+      print('[ChatScreen] Audio is muted, not playing speech.');
+      return;
+    }
     try {
       final url = ApiService.getSpeechUrl(speechPath);
-      print('[ChatScreen] Playing speech from: $url');
+      print('[ChatScreen] Attempting to play audio from URL: $url');
+
       // Stop any currently playing audio before starting new playback.
       await _audioPlayer.stop();
+      print('[ChatScreen] Previous audio stopped.');
+
       await _audioPlayer.setUrl(url);
+      print('[ChatScreen] Audio URL set successfully.');
+
       _audioPlayer.play();
+      print('[ChatScreen] Audio playback started.');
     } catch (e) {
       print('[ChatScreen] Error playing speech: $e');
       // Silent fail - never block UI
@@ -157,33 +167,37 @@ class _ChatScreenState extends State<ChatScreen> {
 
       String? speechUrl;
 
-      await for (final chunk in stream) {
-        // SSE streams can send multiple events in one chunk.
-        final lines = chunk.split('\n').where((line) => line.isNotEmpty).toList();
+      String buffer = '';
+    await for (final chunk in stream) {
+      buffer += chunk;
 
-        for (final line in lines) {
-          if (line.startsWith('data: ')) {
-            final data = line.substring(6);
-            if (data.isEmpty) continue;
+      // Process buffer line by line
+      int newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) != -1) {
+        final line = buffer.substring(0, newlineIndex).trim();
+        buffer = buffer.substring(newlineIndex + 1);
 
-            try {
-              final decodedChunk = jsonDecode(data);
+        if (line.startsWith('data: ')) {
+          final data = line.substring(6);
+          if (data.isEmpty) continue;
 
-              if (decodedChunk['done'] == true) {
-                speechUrl = decodedChunk['speechUrl'];
-                // Don't break here; process all lines in the chunk.
-              } else if (decodedChunk['content'] != null) {
-                setState(() {
-                  jessMessage.content += decodedChunk['content'];
-                });
-                _scrollToBottom();
-              }
-            } catch (e) {
-              print('[ChatScreen] Could not decode stream data JSON: $data');
+          try {
+            final decodedChunk = jsonDecode(data);
+
+            if (decodedChunk['done'] == true) {
+              speechUrl = decodedChunk['speechUrl'];
+            } else if (decodedChunk['content'] != null) {
+              setState(() {
+                jessMessage.content += decodedChunk['content'];
+              });
+              _scrollToBottom();
             }
+          } catch (e) {
+            print('[ChatScreen] Could not decode stream data JSON: $data');
           }
         }
       }
+    }
 
       print('[ChatScreen] Stream finished.');
       await _saveConversation();

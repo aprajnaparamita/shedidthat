@@ -105,8 +105,7 @@ async function handleSpeechRequest(uuid, env) {
   while (elapsed < maxWait) {
     const audio = await env.SPEECH_CACHE.get(uuid);
     if (audio) {
-      console.log(`[Speech] Found audio for UUID: ${uuid}. Deleting from cache and streaming.`);
-      await env.SPEECH_CACHE.delete(uuid);
+      console.log(`[Speech] Found audio for UUID: ${uuid}. Streaming from cache.`);
       const binary = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
       return new Response(binary, {
         headers: {
@@ -150,30 +149,6 @@ app.get('/api/speech/:uuid', async (c) => {
     return handleSpeechRequest(uuid, c.env);
 });
 
-class Stream {
-  constructor(c) {
-    const { readable, writable } = new TransformStream();
-    this.writer = writable.getWriter();
-    this.encoder = new TextEncoder();
-    this.response = c.body(readable, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
-    });
-  }
-
-  async write(data) {
-    const eventData = JSON.stringify(data);
-    await this.writer.write(this.encoder.encode(`data: ${eventData}\n\n`));
-  }
-
-  async close() {
-    await this.writer.close();
-  }
-}
-
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
   try {
     const deviceId = c.get('deviceId');
@@ -191,41 +166,53 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     const systemMessage = c.env[`PERSONA_${lang.toUpperCase()}`] || c.env.PERSONA_EN;
     console.log(`[CHAT] Using ${lang.toUpperCase()} persona.`);
 
-    const aiStream = await anthropic.messages.stream({
+    // 1. Get the full response from the AI first.
+    const msg = await anthropic.messages.create({
       model: "claude-3-haiku-20240307",
       max_tokens: 1024,
       messages: messageHistory,
       system: systemMessage,
     });
 
-    const stream = new Stream(c);
-    let fullMessage = "";
+    const fullMessage = msg.content[0].text;
+    console.log(`[CHAT] Full message received from AI: ${fullMessage}`);
 
+    // 2. Prepare for streaming the response.
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    // 3. Start a non-blocking process to stream the chunks.
     (async () => {
-      try {
-        for await (const chunk of aiStream) {
-          if (chunk.type === 'content_block_delta') {
-            const text = chunk.delta.text;
-            fullMessage += text;
-            await stream.write({ content: text });
-          }
-        }
-        
-        const speechUUID = crypto.randomUUID();
-        const speechUrl = `/api/speech/${speechUUID}`;
-        await stream.write({ done: true, speechUrl: speechUrl });
+      // 3a. Split the message into word-like chunks for a typing effect.
+      const chunks = fullMessage.match(/\S+\s*/g) || [fullMessage];
 
-        c.executionCtx.waitUntil(handleTTS(fullMessage, speechUUID, lang, c.env));
-
-      } catch (e) {
-        console.error("[CHAT] Streaming error:", e);
-      } finally {
-        console.log("[CHAT] Finished streaming from AI.");
-        await stream.close();
+      for (const chunk of chunks) {
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+        // Add a small delay to simulate typing
+        await new Promise(resolve => setTimeout(resolve, 50)); 
       }
+
+      // 3b. Send the final message with the speech URL.
+      const speechUUID = crypto.randomUUID();
+      const speechUrl = `/api/speech/${speechUUID}`;
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ done: true, speechUrl: speechUrl })}\n\n`));
+      
+      // 3c. Start the TTS generation in the background.
+      c.executionCtx.waitUntil(handleTTS(fullMessage, speechUUID, lang, c.env));
+
+      // 3d. Close the stream.
+      await writer.close();
     })();
 
-    return stream.response;
+    // 4. Return the readable stream to the client immediately.
+    return c.body(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
 
   } catch (error) {
     console.error('Chat error:', error);
