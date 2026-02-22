@@ -30,29 +30,9 @@ app.use(async (c, next) => {
 // --- Middleware ---
 
 app.onError((err, c) => {
-  try {
-    if (c.env.SENTRY_DSN) {
-      console.log('SENTRY_DSN is present, initializing Sentry to report error.');
-      const sentry = new Toucan({
-        dsn: c.env.SENTRY_DSN,
-        context: c.executionCtx,
-        request: c.req.raw,
-      });
-      // Explicitly use waitUntil to ensure the async request to Sentry completes
-      c.executionCtx.waitUntil(
-        (async () => {
-          sentry.captureException(err);
-          console.log('Sentry captureException has been called.');
-        })()
-      );
-    } else {
-      console.error('SENTRY_DSN secret not found. Cannot report error to Sentry.');
-    }
-  } catch (e) {
-    // If Sentry initialization itself fails, log that error.
-    console.error('Failed to initialize or use Sentry:', e);
-  }
-
+  // Reuse the Sentry instance from the middleware, if it exists.
+  // Toucan internally uses `waitUntil` on the execution context passed during initialization.
+  c.get('sentry')?.captureException(err);
   return c.text('Internal Server Error', 500);
 });
 
