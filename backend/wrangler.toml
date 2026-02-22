@@ -19,7 +19,3 @@ id = "2b813868b3bd42239687501e2d40e715"
 binding = "SPEECH_CACHE"
 id = "eea08f159232476b9271534a2cc49d2f"
 
-[text_blobs]
-PERSONA_EN = "./persona.en.md"
-PERSONA_ZH = "./persona.zh.md"
-PERSONA_TH = "./persona.th.md"

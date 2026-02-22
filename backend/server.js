@@ -3,6 +3,16 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
 
+import personaEN from './persona.en.md';
+import personaZH from './persona.zh.md';
+import personaTH from './persona.th.md';
+
+const PERSONAS = {
+  EN: personaEN,
+  ZH: personaZH,
+  TH: personaTH,
+};
+
 const app = new Hono();
 
 // --- Middleware ---
@@ -163,7 +173,7 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     }
 
     const anthropic = new Anthropic({ apiKey: c.env.ANTHROPIC_API_KEY });
-    const systemMessage = c.env[`PERSONA_${lang.toUpperCase()}`] || c.env.PERSONA_EN;
+    const systemMessage = PERSONAS[lang.toUpperCase()] || PERSONAS.EN;
     console.log(`[CHAT] Using ${lang.toUpperCase()} persona.`);
 
     // 1. Get the full response from the AI first.
