@@ -56,6 +56,9 @@ app.use('/*', cors({
 }));
 
 const authMiddleware = async (c, next) => {
+  console.log('authMiddleware: start');
+  console.log('APP_SECRET present:', !!c.env.APP_SECRET);
+  console.log('DEVICE_KV present:', !!c.env.DEVICE_KV);
   const secret = c.req.header('x-app-secret');
   const deviceId = c.req.header('x-device-id');
 
