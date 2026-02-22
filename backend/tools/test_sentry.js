@@ -25,6 +25,7 @@ async function runTest() {
       body: JSON.stringify({ deviceId }),
     });
 
+
     if (registerResponse.status !== 200) {
       const body = await registerResponse.text();
       throw new Error(`Failed to register device. Status: ${registerResponse.status}, Body: ${body}`);
@@ -39,6 +40,9 @@ async function runTest() {
         'x-app-secret': APP_SECRET,
       },
     });
+    console.log('Sentry response status:', sentryResponse.status);
+    const body = await sentryResponse.text();
+    console.log('Sentry response body:', body);
 
     // We expect a 500 error here
     if (sentryResponse.status === 500) {

@@ -180,7 +180,12 @@ app.get('/api/speech/:uuid', async (c) => {
 });
 
 app.get('/sentrytest', authMiddleware, async (c) => {
-  throw new Error('This is a Sentry test exception from the backend.');
+  try {
+    throw new Error('This is a Sentry test exception from the backend.');
+  } catch (err) {
+    c.get('sentry').captureException(err);
+    return c.text('Internal Server Error', 500);
+  }
 });
 
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
