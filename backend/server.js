@@ -17,6 +17,17 @@ const PERSONAS = {
 
 const app = new Hono();
 
+function getSentry(c) {
+  console.error('getSentry triggered');
+  console.log('SENTRY_DSN present:', !!c.env.SENTRY_DSN);
+  console.log('sentry instance present:', !!c.get('sentry'));
+  return c.get('sentry') ?? new Toucan({
+    dsn: c.env.SENTRY_DSN,
+    context: c.executionCtx,
+    request: c.req.raw,
+  });
+}
+
 app.use(async (c, next) => {
   const sentry = new Toucan({
     dsn: c.env.SENTRY_DSN,
@@ -30,22 +41,7 @@ app.use(async (c, next) => {
 // --- Middleware ---
 // gawddamn.... adding more logging 
 app.onError((err, c) => {
-  console.error('onError triggered:', err.message);
-  console.log('SENTRY_DSN present:', !!c.env.SENTRY_DSN);
-  console.log('sentry instance present:', !!c.get('sentry'));
-  try {
-    if (c.env.SENTRY_DSN) {
-      const sentry = new Toucan({
-        dsn: c.env.SENTRY_DSN,
-        context: c.executionCtx,
-        request: c.req.raw,
-      });
-      sentry.captureException(err);
-      console.log('captureException called');
-    }
-  } catch (e) {
-    console.error('Failed to capture Sentry exception:', e);
-  }
+  getSentry(c).captureException(err);
   return c.text('Internal Server Error', 500);
 });
 
@@ -184,7 +180,7 @@ app.post('/register', async (c) => {
     console.log(`Device registered: ${deviceId}`);
     return c.json({ message: 'Device registered successfully' });
   } catch (error) {
-    c.get('sentry').captureException(error);
+    getSentry(c).captureException(error);
     console.error('Registration error:', error);
     return c.json({ error: 'Failed to register device' }, 500);
   }
@@ -196,12 +192,14 @@ app.get('/api/speech/:uuid', async (c) => {
 });
 
 app.get('/sentrytest', authMiddleware, async (c) => {
-  try {
-    throw new Error('This is a Sentry test exception from the backend.');
-  } catch (err) {
-    c.get('sentry').captureException(err);
-    return c.text('Internal Server Error', 500);
-  }
+  const err = new Error('This is a Sentry test exception from the backend.');
+  const sentry = new Toucan({
+    dsn: c.env.SENTRY_DSN,
+    context: c.executionCtx,
+    request: c.req.raw,
+  });
+  sentry.captureException(err);
+  return c.text('Internal Server Error', 500);
 });
 
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
@@ -270,7 +268,7 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     });
 
   } catch (error) {
-    c.get('sentry').captureException(error);
+    getSentry(c).captureException(error);
     console.error('Chat error:', error);
     return c.json({ error: 'An error occurred during the chat.' }, 500);
   }
