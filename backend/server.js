@@ -28,14 +28,18 @@ app.use(async (c, next) => {
 });
 
 // --- Middleware ---
+// gawddamn.... adding more logging 
 app.onError((err, c) => {
   console.error('onError triggered:', err.message);
   console.log('SENTRY_DSN present:', !!c.env.SENTRY_DSN);
   console.log('sentry instance present:', !!c.get('sentry'));
-  
   try {
-    const sentry = c.get('sentry');
-    if (sentry) {
+    if (c.env.SENTRY_DSN) {
+      const sentry = new Toucan({
+        dsn: c.env.SENTRY_DSN,
+        context: c.executionCtx,
+        request: c.req.raw,
+      });
       sentry.captureException(err);
       console.log('captureException called');
     }
