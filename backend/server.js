@@ -28,19 +28,22 @@ app.use(async (c, next) => {
 });
 
 // --- Middleware ---
-
 app.onError((err, c) => {
+  console.error('onError triggered:', err.message);
+  console.log('SENTRY_DSN present:', !!c.env.SENTRY_DSN);
+  console.log('sentry instance present:', !!c.get('sentry'));
+  
   try {
     const sentry = c.get('sentry');
     if (sentry) {
       sentry.captureException(err);
+      console.log('captureException called');
     }
   } catch (e) {
     console.error('Failed to capture Sentry exception:', e);
   }
   return c.text('Internal Server Error', 500);
 });
-
 
 app.use('/*', cors({
   origin: '*',
