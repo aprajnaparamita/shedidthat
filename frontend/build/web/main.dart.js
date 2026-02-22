@@ -30138,7 +30138,7 @@ a2=A.aCC()
 if(a2.gNC().aj(0,"lang")){a0=a2.gNC().i(0,"lang")
 a0.toString
 A.co("[ApiService] Overriding language with lang="+a0+" from URL")
-a1=a0}m=A.cY("https://app.shedidthat.app/chat?lang="+a1,0,null)
+a1=a0}m=A.cY("https://api.shedidthat.app/chat?lang="+a1,0,null)
 A.co("[ApiService] Sending chat request to "+A.j(m))
 a3=A.aUX()
 l=a3==null?new A.wc(A.b([],t.O)):a3
@@ -32492,7 +32492,7 @@ var $async$rS=A.p(function(a,b){if(a===1){o.push(b)
 s=p}while(true)switch(s){case 0:s=3
 return A.m(A.CQ(),$async$rS)
 case 3:i=b
-h=A.cY("https://app.shedidthat.app/register",0,null)
+h=A.cY("https://api.shedidthat.app/register",0,null)
 A.co("[DeviceService] Attempting to register device at `"+A.j(h)+"`")
 p=5
 l=t.N
@@ -102741,7 +102741,7 @@ s=p}while(true)switch(s){case 0:A.co("[ChatScreen] playSpeech called with path: 
 if(n.Q){A.co("[ChatScreen] Audio is muted, not playing speech.")
 s=1
 break}p=4
-m="https://app.shedidthat.app"+a
+m="https://api.shedidthat.app"+a
 A.co("[ChatScreen] Attempting to play audio from URL: "+A.j(m))
 k=n.w
 s=7

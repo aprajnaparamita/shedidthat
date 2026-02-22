@@ -47,3 +47,15 @@ app.*.map.json
 /android/app/release
 
 sentry.properties
+*.dill
+*.cache.dill.track.dill
+
+build/ios
+build/macos
+build/android
+build/linux
+build/windows
+build/*.dill
+build/*.cache.dill.track.dill
+frontend/build/*.dill
+frontend/build/*.cache.dill.track.dill

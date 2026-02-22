@@ -11,7 +11,7 @@ import 'package:shedidthat/services/device_service.dart';
 import '../models/message.dart';
 
 class ApiService {
-  static const String _prodBaseUrl = 'https://app.shedidthat.app';
+  static const String _prodBaseUrl = 'https://api.shedidthat.app';
   // Use the DEV_IP from the environment for local development.
   static const String _devIp = String.fromEnvironment('DEV_IP', defaultValue: '127.0.0.1');
   static final String _localBaseUrl = 'http://$_devIp:8788';

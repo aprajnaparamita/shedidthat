@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class DeviceService {
-  static const String _prodBaseUrl = 'https://app.shedidthat.app';
+  static const String _prodBaseUrl = 'https://api.shedidthat.app';
   static const String _devIp = String.fromEnvironment('DEV_IP', defaultValue: '127.0.0.1');
   static final String _localBaseUrl = 'http://$_devIp:8788';
 
