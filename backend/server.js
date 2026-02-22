@@ -207,7 +207,7 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     const deviceId = c.get('deviceId');
     const lang = c.req.query('lang') || 'en';
     console.log(`[CHAT] Received request for device: ${deviceId}, lang: ${lang}`);
-
+    console.log('CF datacenter:', c.req.raw.cf?.colo);
     const { messages: messageHistory } = await c.req.json();
     console.log(`[CHAT] Received ${messageHistory.length} messages in history.`);
 
