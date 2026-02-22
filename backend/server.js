@@ -215,6 +215,7 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
       return c.json({ error: "Messages are required." }, 400);
     }
 
+    console.log('API key prefix:', c.env.ANTHROPIC_API_KEY?.slice(0, 10));
     const anthropic = new Anthropic({ apiKey: c.env.ANTHROPIC_API_KEY });
     const systemMessage = PERSONAS[lang.toUpperCase()] || PERSONAS.EN;
     console.log(`[CHAT] Using ${lang.toUpperCase()} persona.`);
