@@ -64,4 +64,26 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get emptyStateButton => 'เริ่มเล่าเรื่อง';
+
+  @override
+  String get nagTitle => 'สนับสนุนนักพัฒนา';
+
+  @override
+  String get nagBody =>
+      'แอปนี้ฟรี เป็นโอเพ่นซอร์ส และสร้างโดยคนคนเดียวตอนดึกเพราะแซฟโฟคงต้องการแบบนี้\n\nถ้ามันทำให้คุณยิ้มได้ ลองเลี้ยงกาแฟฉันสักแก้ว ทุกการสนับสนุนมีความหมาย';
+
+  @override
+  String get nagRevolutButton => 'ส่งด้วย Revolut';
+
+  @override
+  String get nagPromptPayButton => 'ส่งด้วยพร้อมเพย์ของไทย';
+
+  @override
+  String get nagBankTransferButton => 'โอนเงินผ่านธนาคาร';
+
+  @override
+  String get nagDismissButton => 'ไม่ใช่วันนี้? ไม่เป็นไร เจสไม่ได้ไปไหน';
+
+  @override
+  String get nagBubbleText => 'คุณสุดยอดมาก!';
 }

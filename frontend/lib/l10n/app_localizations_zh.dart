@@ -60,4 +60,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get emptyStateButton => '开始汇报';
+
+  @override
+  String get nagTitle => '支持开发者';
+
+  @override
+  String get nagBody =>
+      '这个应用是免费、开源的，由一个人深夜打造，因为萨福会希望这样。\n\n如果它让你笑了，考虑给我买杯咖啡吧。每一份支持都很有帮助。';
+
+  @override
+  String get nagRevolutButton => '使用Revolut发送';
+
+  @override
+  String get nagPromptPayButton => '使用泰国PromptPay发送';
+
+  @override
+  String get nagBankTransferButton => '银行转账';
+
+  @override
+  String get nagDismissButton => '今天不了？没关系。Jess哪儿也不去。';
+
+  @override
+  String get nagBubbleText => '你太棒了！';
 }

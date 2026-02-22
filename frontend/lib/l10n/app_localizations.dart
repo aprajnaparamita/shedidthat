@@ -201,6 +201,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start Debriefing'**
   String get emptyStateButton;
+
+  /// No description provided for @nagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support the Developer'**
+  String get nagTitle;
+
+  /// No description provided for @nagBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is free, open source, and built by one person late at night because Sappho would have wanted this.\n\nIf it made you smile, consider buying me a coffee. Every bit helps.'**
+  String get nagBody;
+
+  /// No description provided for @nagRevolutButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send with Revolut'**
+  String get nagRevolutButton;
+
+  /// No description provided for @nagPromptPayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send with Thai PromptPay'**
+  String get nagPromptPayButton;
+
+  /// No description provided for @nagBankTransferButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Transfer'**
+  String get nagBankTransferButton;
+
+  /// No description provided for @nagDismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not today? No worries. Jess isn\'t going anywhere.'**
+  String get nagDismissButton;
+
+  /// No description provided for @nagBubbleText.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re amazing!'**
+  String get nagBubbleText;
 }
 
 class _AppLocalizationsDelegate

@@ -64,4 +64,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyStateButton => 'Start Debriefing';
+
+  @override
+  String get nagTitle => 'Support the Developer';
+
+  @override
+  String get nagBody =>
+      'This app is free, open source, and built by one person late at night because Sappho would have wanted this.\n\nIf it made you smile, consider buying me a coffee. Every bit helps.';
+
+  @override
+  String get nagRevolutButton => 'Send with Revolut';
+
+  @override
+  String get nagPromptPayButton => 'Send with Thai PromptPay';
+
+  @override
+  String get nagBankTransferButton => 'Bank Transfer';
+
+  @override
+  String get nagDismissButton =>
+      'Not today? No worries. Jess isn\'t going anywhere.';
+
+  @override
+  String get nagBubbleText => 'You\'re amazing!';
 }

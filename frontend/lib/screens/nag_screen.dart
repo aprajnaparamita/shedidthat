@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shedidthat/screens/bank_transfer_screen.dart';
 import 'package:shedidthat/screens/promptpay_screen.dart';
 import 'package:shedidthat/theme/app_colors.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
 
 class NagScreen extends StatelessWidget {
   const NagScreen({super.key});
