@@ -9,6 +9,10 @@ main = "server.js"
 # Compatibility flags are required for modern Workers development.
 compatibility_date = "2023-10-30"
 
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+
 # This section defines the binding to your Cloudflare KV namespace.
 # Wrangler will automatically create a local version for development.
 [[kv_namespaces]]
