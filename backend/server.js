@@ -1,7 +1,6 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import Anthropic from '@anthropic-ai/sdk';
 import { Toucan } from 'toucan-js';
 
 
@@ -215,20 +214,33 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
       return c.json({ error: "Messages are required." }, 400);
     }
 
-    console.log('API key prefix:', c.env.ANTHROPIC_API_KEY?.slice(0, 10));
-    const anthropic = new Anthropic({ apiKey: c.env.ANTHROPIC_API_KEY });
-    const systemMessage = PERSONAS[lang.toUpperCase()] || PERSONAS.EN;
+    const systemMessage = {
+      role: 'system',
+      content: PERSONAS[lang.toUpperCase()] || PERSONAS.EN
+    };
     console.log(`[CHAT] Using ${lang.toUpperCase()} persona.`);
 
     // 1. Get the full response from the AI first.
-    const msg = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 1024,
-      messages: messageHistory,
-      system: systemMessage,
+    const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${c.env.DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [systemMessage, ...messageHistory],
+        max_tokens: 1024,
+      })
     });
 
-    const fullMessage = msg.content[0].text;
+    if (!deepseekResponse.ok) {
+      const errorBody = await deepseekResponse.text();
+      throw new Error(`DeepSeek API failed with status ${deepseekResponse.status}: ${errorBody}`);
+    }
+
+    const msg = await deepseekResponse.json();
+    const fullMessage = msg.choices[0].message.content;
     console.log(`[CHAT] Full message received from AI: ${fullMessage}`);
 
     // 2. Prepare for streaming the response.

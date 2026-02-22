@@ -9,7 +9,6 @@
     "test:sentry": "node -r dotenv/config tools/test_sentry.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.8",
     "hono": "^3.11.7",
     "toucan-js": "^4.1.1"
   },

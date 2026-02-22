@@ -16,7 +16,7 @@ fi
 
 # Write the IP address to the .env file
 echo "DEV_IP=$IP_ADDRESS" > .env
-echo "ANTHROPIC_API_KEY=<anthropic api key>" >> .env
+echo "DEEPSEEK_API_KEY=<deepseek api key>" >> .env
 echo "APP_SECRET=<app secret>" >> .env
 echo "GOOGLE_TEXT_API_KEY=<google text key>" >> .env
 echo "PROD_URL=https://<your prod url>" >> .env
