@@ -19,8 +19,9 @@ echo "DEV_IP=$IP_ADDRESS" > .env
 echo "ANTHROPIC_API_KEY=<anthropic api key>" >> .env
 echo "APP_SECRET=<app secret>" >> .env
 echo "GOOGLE_TEXT_API_KEY=<google text key>" >> .env
-echo "PROD_URL=https://<your prod url>"
+echo "PROD_URL=https://<your prod url>" >> .env
 echo "SENTRY_DSN=<your sentry dsn>" >> .env
+echo "PROD_URL=<your prod url for test:sentry>" >> .env
 echo "Set DEV_IP to $IP_ADDRESS in .env"
 
 # Start the wrangler dev server
