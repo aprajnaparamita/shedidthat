@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shedidthat/services/api_service.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 import 'package:shedidthat/screens/nag_screen.dart';
 import '../services/device_service.dart';
@@ -101,8 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (kDebugMode)
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8.0,
+                        runSpacing: 8.0,
                         children: [
                           TextButton(
                             onPressed: () async {
@@ -124,6 +127,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                             child: const Text('Show Nag Screen (Debug Only)'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              throw Exception('This is a Sentry test exception from the client.');
+                            },
+                            child: const Text('Sentry Client Error (Debug Only)'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Sending server error request...'),
+                                ),
+                              );
+                              await ApiService.triggerSentryTest();
+                            },
+                            child: const Text('Sentry Server Error (Debug Only)'),
                           ),
                         ],
                       ),

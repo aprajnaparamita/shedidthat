@@ -25,6 +25,35 @@ class ApiService {
     return '$_baseUrl$speechPath';
   }
 
+  static Future<void> triggerSentryTest() async {
+    final url = Uri.parse('$_baseUrl/sentrytest');
+    final deviceId = await DeviceService.getDeviceToken();
+
+    if (_appSecret.isEmpty) {
+      print('APP_SECRET environment variable not set. Cannot trigger server error.');
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-device-id': deviceId,
+          'x-app-secret': _appSecret,
+        },
+      );
+
+      if (response.statusCode >= 400) {
+        print('Sentry test endpoint returned status ${response.statusCode}');
+      } else {
+        print('Sentry test endpoint returned status ${response.statusCode}. Expected an error.');
+      }
+    } catch (e) {
+      print('Sentry test call failed: $e');
+    }
+  }
+
   static Stream<String> chat(List<Message> messages, String deviceToken) async* {
     String lang = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
 

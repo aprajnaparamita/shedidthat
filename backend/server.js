@@ -2,6 +2,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
+import { Toucan } from 'toucan-js';
+
 
 import personaEN from './persona.en.md';
 import personaZH from './persona.zh.md';
@@ -15,7 +17,27 @@ const PERSONAS = {
 
 const app = new Hono();
 
+app.use(async (c, next) => {
+  const sentry = new Toucan({
+    dsn: c.env.SENTRY_DSN,
+    context: c.executionCtx,
+    request: c.req.raw,
+  });
+  c.set('sentry', sentry);
+  await next();
+});
+
 // --- Middleware ---
+
+app.onError((err, c) => {
+  const sentry = new Toucan({
+    dsn: c.env.SENTRY_DSN,
+    context: c.executionCtx,
+    request: c.req.raw,
+  });
+  sentry.captureException(err);
+  return c.text('Internal Server Error', 500);
+});
 
 app.use('/*', cors({
   origin: '*',
@@ -149,6 +171,7 @@ app.post('/register', async (c) => {
     console.log(`Device registered: ${deviceId}`);
     return c.json({ message: 'Device registered successfully' });
   } catch (error) {
+    c.get('sentry').captureException(error);
     console.error('Registration error:', error);
     return c.json({ error: 'Failed to register device' }, 500);
   }
@@ -157,6 +180,10 @@ app.post('/register', async (c) => {
 app.get('/api/speech/:uuid', async (c) => {
     const { uuid } = c.req.param();
     return handleSpeechRequest(uuid, c.env);
+});
+
+app.get('/sentrytest', authMiddleware, async (c) => {
+  throw new Error('This is a Sentry test exception from the backend.');
 });
 
 app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
@@ -225,6 +252,7 @@ app.post('/chat', authMiddleware, rateLimitMiddleware, async (c) => {
     });
 
   } catch (error) {
+    c.get('sentry').captureException(error);
     console.error('Chat error:', error);
     return c.json({ error: 'An error occurred during the chat.' }, 500);
   }
