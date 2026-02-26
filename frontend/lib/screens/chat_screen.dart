@@ -118,7 +118,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
     try {
-      final url = ApiService.getSpeechUrl(speechPath);
+      final url = await ApiService.getSpeechUrl(speechPath);
       print('[ChatScreen] Attempting to play audio from URL: $url');
 
       // Stop any currently playing audio before starting new playback.

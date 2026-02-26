@@ -9,6 +9,9 @@ import '../widgets/conversation_card.dart';
 import '../widgets/empty_state.dart';
 import 'chat_screen.dart';
 
+import 'package:shedidthat/services/local_server_manager.dart';
+import 'package:shedidthat/services/device_service.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,19 +22,60 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
   List<String> _conversationIds = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
+  bool _isLocalMode = false;
 
   @override
   void initState() {
     super.initState();
-    _loadConversations();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _initServer();
+    await _loadConversations();
+  }
+
+  Future<void> _initServer() async {
+    print('[HomeScreen] Initializing server...');
+    final isLocal = await _storageService.getIsLocalMode();
+    setState(() {
+      _isLocalMode = isLocal;
+    });
+
+    if (isLocal) {
+      print('[HomeScreen] Local mode detected. Starting local server...');
+      final deepseekApiKey = await _storageService.getDeepseekApiKey();
+      final googleApiKey = await _storageService.getGoogleApiKey();
+      if (deepseekApiKey != null && googleApiKey != null) {
+        print('[HomeScreen] Waiting for local server to confirm startup...');
+        await LocalServerManager().startServer(
+          deepseekApiKey: deepseekApiKey,
+          googleApiKey: googleApiKey,
+        );
+        print('[HomeScreen] Local server started. Registering device...');
+        await DeviceService.registerDevice();
+        print('[HomeScreen] Device registration complete.');
+      }
+    }
   }
 
   Future<void> _loadConversations() async {
-    final ids = await _storageService.getAllConversationIds();
+    print('[HomeScreen] Loading conversations...');
     setState(() {
-      _conversationIds = ids;
+      _isLoading = true;
     });
+    final ids = await _storageService.getAllConversationIds();
+    final isLocalMode = await _storageService.getIsLocalMode();
+    print('[HomeScreen] Found ${ids.length} conversation IDs.');
+    if (mounted) {
+      setState(() {
+        _conversationIds = ids;
+        _isLocalMode = isLocalMode;
+        _isLoading = false;
+      });
+    }
+    print('[HomeScreen] Conversations loaded. UI should be enabled.');
   }
 
   void _startNewConversation() async {
@@ -128,23 +172,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             child: const Text('Show Nag Screen (Debug Only)'),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              throw Exception('This is a Sentry test exception from the client.');
-                            },
-                            child: const Text('Sentry Client Error (Debug Only)'),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Sending server error request...'),
-                                ),
-                              );
-                              await ApiService.triggerSentryTest();
-                            },
-                            child: const Text('Sentry Server Error (Debug Only)'),
-                          ),
+                          if (!_isLocalMode)
+                            TextButton(
+                              onPressed: () {
+                                throw Exception('This is a Sentry test exception from the client.');
+                              },
+                              child: const Text('Sentry Client Error (Debug Only)'),
+                            ),
+                          if (!_isLocalMode)
+                            TextButton(
+                              onPressed: () async {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Sending server error request...'),
+                                  ),
+                                );
+                                await ApiService.triggerSentryTest();
+                              },
+                              child: const Text('Sentry Server Error (Debug Only)'),
+                            ),
                         ],
                       ),
                     ),

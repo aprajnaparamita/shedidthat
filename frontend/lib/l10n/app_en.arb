@@ -23,5 +23,13 @@
   "nagPromptPayButton": "Send with Thai PromptPay",
   "nagBankTransferButton": "Bank Transfer",
   "nagDismissButton": "Not today? No worries. Jess isn't going anywhere.",
-  "nagBubbleText": "You're amazing!"
+  "nagBubbleText": "You're amazing!",
+  "getTokenScreenTitle": "Setup Local API Keys",
+  "getTokenScreenExplanation": "To run this app locally, you need to provide your own API keys from DeepSeek and Google Cloud.",
+  "getTokenScreenDeepSeekTitle": "DeepSeek API Key",
+  "getTokenScreenGoogleTitle": "Google Cloud TTS API Key",
+  "getTokenScreenConsoleButton": "Get key from console",
+  "getTokenScreenHintText": "Paste your API key here",
+  "getTokenScreenTestButton": "Test Key",
+  "runLocally": "Run Locally"
 }

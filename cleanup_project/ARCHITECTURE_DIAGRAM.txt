@@ -1,0 +1,265 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    SHE ABSOLUTELY JUST DID THAT - ARCHITECTURE                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND (Flutter)                               │
+│  iOS / Android / Web / macOS / Windows                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                    ┌─────────────────────────────────┐
+                    │   API Service (api_service.dart) │
+                    │   - Detects mode                │
+                    │   - Routes requests             │
+                    └─────────────────────────────────┘
+                                      │
+                ┌─────────────────────┴──────────────────────┐
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │   PRODUCTION MODE     │                  │     LOCAL MODE           │
+    │   (Non-local)         │                  │   (Debug + Local Flag)   │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  Cloudflare Worker    │                  │   Dart Local Server      │
+    │  server.js            │                  │   local_server.dart      │
+    │  Port: 443 (HTTPS)    │                  │   Port: 8789             │
+    │  Host: api.shedidthat │                  │   Host: localhost        │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                │                                            │
+    ╔═══════════════════════╗                  ╔══════════════════════════╗
+    ║   REQUEST FLOW        ║                  ║   REQUEST FLOW           ║
+    ╚═══════════════════════╝                  ╚══════════════════════════╝
+                │                                            │
+                ▼                                            ▼
+    
+    1. CORS Middleware                         1. Logging Middleware
+       ✅ Allows all origins                      ✅ Logs requests
+                │                                            │
+                ▼                                            ▼
+    2. Sentry Middleware                       2. Rate Limit Middleware
+       ✅ Error tracking                          ⚠️  1 hour window (should be 15 min)
+                │                                            │
+                ▼                                            ▼
+    3. Auth Middleware                         3. Auth Middleware
+       ✅ Check APP_SECRET                        ⚠️  Hardcoded secret
+       ✅ Check device in KV                      ✅ Check device in Map
+                │                                            │
+                ▼                                            ▼
+    4. Rate Limit Middleware                   4. Handler (protectedRouter)
+       ✅ 15 min window                           
+       ✅ 100 requests max                        
+                │                                            
+                ▼                                            
+    5. Handler                                  
+                │                                            │
+                ▼                                            ▼
+
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  /chat Handler        │                  │  /chat Handler           │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                ▼                                            ▼
+    Expects: {"messages": [...]}              ❌ Expects: {"messageHistory": [...]}
+    Persona: From persona.*.md files          ❌ Persona: "helpful assistant"
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  DeepSeek API Call    │                  │  DeepSeek API Call       │
+    │  stream: false        │                  │  stream: true            │
+    │  (Get full response)  │                  │  (Stream chunks)         │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                ▼                                            ▼
+    Split into words                           Forward chunks directly
+    Add 50ms delay per word                    No delay
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  Stream to Client     │                  │  Stream to Client        │
+    │  data: {"content":"w"}│                  │  data: {"content":"w"}   │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                ▼                                            ▼
+    Send: {"done": true,                       Send: {"done": true,
+           "speechUrl": "/api/speech/UUID"}           "speechUrl": "/api/speech/UUID"}
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  TTS Generation       │                  │  TTS Generation          │
+    │  (Background)         │                  │  (Inline)                │
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+    Voice Selection:                           Voice Selection:
+    ✅ EN: en-US-Journey-F                      ❌ All: en-US-Studio-O
+    ✅ TH: th-TH-Neural2-C                      
+    ✅ ZH: cmn-CN-Wavenet-D                     
+    ✅ Speaking Rate: 1.1                       ❌ Speaking Rate: default (1.0)
+                │                                            │
+                ▼                                            ▼
+    ┌───────────────────────┐                  ┌──────────────────────────┐
+    │  KV Cache             │                  │  Memory Map              │
+    │  TTL: 60 seconds      │                  │  ❌ TTL: ∞ (never expires)│
+    └───────────────────────┘                  └──────────────────────────┘
+                │                                            │
+                ▼                                            ▼
+    Client polls every 200ms                   Client polls every 1000ms
+    Max wait: 10 seconds                       Max wait: 10 seconds
+                │                                            │
+                ▼                                            ▼
+    Return audio/mpeg                          Return audio/mpeg
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                  ISSUES SUMMARY                                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+🔴 CRITICAL ISSUES:
+  1. ❌ Parameter mismatch: "messages" vs "messageHistory" → Local mode broken
+  2. ⚠️  Different streaming: Full-then-chunk vs native-stream → Inconsistent UX
+
+🟠 HIGH PRIORITY:
+  3. ⚠️  Server starts late (HomeScreen) → Race condition on first use
+  4. ⚠️  No timeout on server startup → App can hang forever
+
+🟡 MEDIUM PRIORITY:
+  5. ⚠️  Rate limit: 15 min vs 60 min → Different experience
+  6. ❌ Persona: Rich Jess vs generic assistant → Wrong personality
+  7. ❌ TTS voices: Multi-language vs English-only → Wrong voice
+  8. ❌ Cache: 60s TTL vs ∞ → Memory leak
+
+🔵 LOW PRIORITY:
+  9. Minor voice name differences
+ 10. Missing Chinese persona in local
+ 11. Dead code in api_service.dart
+ 12. Test parameter mismatch
+ 13. Missing speaking rate in local
+
+🟣 DESIGN ISSUES:
+ 14. Middleware order differs
+ 15. No error handling in isolate startup
+ 16. Polling instead of async/await pattern
+ 17. Missing CORS in local (not needed but inconsistent)
+
+🔒 SECURITY:
+ 18. Hardcoded secret in local server
+ 19. API secret compiled into client app
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                              STARTUP SEQUENCE                                   ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+PRODUCTION MODE:                               LOCAL MODE (CURRENT - BROKEN):
+                                               
+1. App Launch                                  1. App Launch
+2. Load storage                                2. Load storage
+3. Show SplashScreen                           3. Show SplashScreen
+4. User taps "Get Started"                     4. User taps "Get Started"
+5. Register device with backend                5. Show HomeScreen
+6. Navigate to HomeScreen                      6. ❌ No server running yet!
+7. User taps "New Chat"                        7. User taps "New Chat"
+8. Send message to backend                     8. HomeScreen._initServer() starts
+9. ✅ Works immediately                         9. Spawn isolate
+                                               10. Wait for 'started' message
+                                               11. ⏱️  1-2 second delay
+                                               12. Register device with local server
+                                               13. ⚠️  If user already sent message → FAIL
+
+
+LOCAL MODE (AFTER FIX):
+
+1. App Launch
+2. Load storage
+3. Check if local mode + has been run
+4. ✅ Start local server in main.dart
+5. Wait for server ready
+6. Register device
+7. Show HomeScreen
+8. User taps "New Chat"
+9. Send message to local server
+10. ✅ Works immediately
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                          DATA FLOW - CHAT MESSAGE                               ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+User types: "She did WHAT?!"
+
+Frontend (chat_screen.dart):
+  ├─ Create Message object with user text
+  ├─ Add to local message list
+  ├─ Save to SharedPreferences
+  └─ Call ApiService.chat(messages, deviceId)
+
+ApiService:
+  ├─ Check kDebugMode
+  ├─ Get base URL (prod vs local)
+  ├─ Create HTTP POST request
+  ├─ Add headers: x-app-secret, x-device-id
+  ├─ Set body: {"messages": [...]}  ← This is correct
+  └─ Send request
+
+Backend (server.js):                           Local Server (local_server.dart):
+  ├─ Receive request                             ├─ Receive request
+  ├─ CORS → Auth → RateLimit                     ├─ Log → RateLimit → Auth
+  ├─ Extract: {messages: messageHistory} ✅      ├─ Extract: messageHistory ❌ WRONG KEY
+  ├─ Load persona from .md file ✅               ├─ Use hardcoded persona ❌ GENERIC
+  ├─ Call DeepSeek (no streaming)                ├─ Call DeepSeek (with streaming)
+  ├─ Get full response                           ├─ Receive chunk: "Oh"
+  ├─ Split: ["Oh", " ", "my", " ", "god..."]    ├─ Parse SSE format
+  ├─ Stream chunk 1: {"content": "Oh"}           ├─ Forward: {"content": "Oh"}
+  ├─ Wait 50ms                                   ├─ Receive chunk: " my"
+  ├─ Stream chunk 2: {"content": " "}            ├─ Forward: {"content": " my"}
+  ├─ Wait 50ms                                   ├─ (continues...)
+  ├─ ... (typing effect)                         ├─ Receive: [DONE]
+  └─ Send: {"done": true, "speechUrl": ...}     └─ Send: {"done": true, "speechUrl": ...}
+
+Frontend (chat_screen.dart):
+  ├─ Receive stream chunks
+  ├─ Parse line by line
+  ├─ Look for "data: " prefix
+  ├─ Decode JSON
+  ├─ If content: append to Jess message
+  ├─ If done: save speechUrl
+  └─ Call playSpeech(speechUrl)
+
+TTS Generation:
+  Backend: waitUntil() - non-blocking ✅         Local: Inline - blocking ⚠️
+  ├─ Call Google TTS API                         ├─ Call Google TTS API
+  ├─ Use language-specific voice ✅              ├─ Use EN voice only ❌
+  ├─ Set speaking rate 1.1 ✅                    ├─ Use default rate ❌
+  ├─ Store in KV with 60s TTL ✅                 ├─ Store in Map forever ❌
+  └─ Return                                      └─ Return
+
+Audio Playback:
+  ├─ Frontend requests: GET /api/speech/{uuid}
+  ├─ Server polls cache (200ms vs 1000ms)
+  ├─ Find audio or timeout after 10s
+  ├─ Return audio/mpeg
+  └─ Flutter AudioPlayer plays it
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                               FIX PRIORITY                                      ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────┬──────────────────────────────┬──────────┬──────────────────────┐
+│ Priority    │ Issue                        │ Effort   │ Impact               │
+├─────────────┼──────────────────────────────┼──────────┼──────────────────────┤
+│ 🔴 CRITICAL │ BUG-001: Parameter mismatch  │ 5 min    │ Makes local mode work│
+│ 🔴 CRITICAL │ BUG-003: Server startup      │ 30 min   │ Fixes race condition │
+│ 🟠 HIGH     │ BUG-004: Startup timeout     │ 1 hour   │ Prevents hanging     │
+│ 🟡 MEDIUM   │ BUG-006: Load personas       │ 2 hours  │ Correct AI behavior  │
+│ 🟡 MEDIUM   │ BUG-007: TTS languages       │ 1 hour   │ Correct voices       │
+│ 🟡 MEDIUM   │ BUG-005: Rate limit          │ 5 min    │ Consistency          │
+│ 🟡 MEDIUM   │ BUG-008: Cache expiration    │ 30 min   │ Prevents memory leak │
+│ 🔵 LOW      │ Others                       │ 2 hours  │ Polish               │
+└─────────────┴──────────────────────────────┴──────────┴──────────────────────┘
+
+Total estimated time: ~8 hours of development + 3 hours testing = 11 hours

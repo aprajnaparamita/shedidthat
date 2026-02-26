@@ -95,6 +95,38 @@ You can talk to me. I'm Jess — your queer bestie who is always there for you.
 No logs. Everything stored locally on your device. 
 100% open source. Made by queer women, for queer women.
 
+Actually used:
+Okay, we need to talk.
+You just had the most earth-shattering, toe-curling, why-is-the-ceiling-spinning lesbian sex of your life... and your entire friend group is asleep. Tragic. Criminal, even.
+That's where I come in. Hey, I'm Jess — your queer bestie who is always awake, always hyped for you, and genuinely cannot wait to hear every single detail. Spill. I'm not going anywhere.
+Oh, and just so you know — no logs, no receipts. Everything stays right on your device, just between us. A hundred percent open source, made by queer women, for queer women.
+Because honestly? You deserve a bestie who actually gets it.
+Output english: ElevenLabs_2026-02-22T17_41_33_Victoria - Warm, Trustworthy, and Relatable_pvc_sp108_s100_sb19_se50_b_m2.mp3
+
+Acutally used ZH:
+我们来说点悄悄话吧。
+刚才，你是不是经历了这辈子最难忘的一刻？天旋地转，连脚趾都蜷了起来，天花板仿佛都在跟着旋转——那种只属于我们的，最好的体验。然后你发现，你的朋友们都睡着了。太可惜了，简直不能忍。
+没关系，有我在。我是Jess，你的 queer 姐妹。我永远醒着，永远为你开心，迫不及待想听听你心里的感受。全都告诉我吧。我会一直在这里。
+而且你放心——没有日志，没有痕迹。所有的话，都只留在你的手机里，只属于我们两个人。百分百开源，由我们创造，也只为我们存在。
+因为，你值得一个真正懂你的姐妹，不是吗？
+Output chinese: ElevenLabs_2026-02-22T17_41_33_Victoria - Warm, Trustworthy, and Relatable_pvc_sp108_s100_sb19_se50_b_m2.mp3
+
+Actually used Th:
+โอเค เราต้องคุยกันหน่อยนะ
+เธอเพิ่งผ่านเซ็กซ์เลสเบี้ยนที่แบบ เขย่าโลก บิดปลายเท้า จนงงว่าทำไมเพดานมันหมุนได้ขนาดนี้ มาแท้ๆ
+แต่กลุ่มเพื่อนทั้งกลุ่มดันหลับหมดแล้ว โอ๊ย นี่มันโศกนาฏกรรม ชวนโมโห แบบผิดกฎหมายเลยด้วยซ้ำ
+
+แล้วนั่นแหละ คือจุดที่ฉันเข้ามา
+เฮ้ เราชื่อเจส นะ — เพื่อนสาวเควียร์ของเธอ ที่ไม่เคยหลับ ที่เชียร์เธอสุดใจ และที่อยากฟังทุกรายละเอียดแบบจริงจังมาก
+เล่ามาเลย เทหมดใจ เราอยู่ตรงนี้ ไม่ไปไหน
+
+อ้อ แล้วขอให้รู้ไว้ก่อน — ไม่มีล็อก ไม่มีหลักฐาน
+ทุกอย่างอยู่แค่ในเครื่องของเธอ ระหว่างเราสองคนเท่านั้น
+โอเพ่นซอร์สหนึ่งร้อยเปอร์เซ็นต์ สร้างโดยผู้หญิงเควียร์ เพื่อผู้หญิงเควียร์
+Output Thai: /Users/dara/dev/shedidthat/animation/ElevenLabs_2026-02-22T18_03_15_Arabella\ -\ Mysterious\ and\ Emotive_pvc_sp100_s63_sb100_v3.mp3
+
+
+
 Scene concept art:
 Original found low resolution on Google Images referring to Steven
 Univrse scene in fan art. Upscaled by waifu2 and then heavily modified

@@ -82,4 +82,29 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nagBubbleText => '你太棒了！';
+
+  @override
+  String get getTokenScreenTitle => 'Setup Local API Keys';
+
+  @override
+  String get getTokenScreenExplanation =>
+      'To run this app locally, you need to provide your own API keys from DeepSeek and Google Cloud.';
+
+  @override
+  String get getTokenScreenDeepSeekTitle => 'DeepSeek API Key';
+
+  @override
+  String get getTokenScreenGoogleTitle => 'Google Cloud TTS API Key';
+
+  @override
+  String get getTokenScreenConsoleButton => 'Get key from console';
+
+  @override
+  String get getTokenScreenHintText => 'Paste your API key here';
+
+  @override
+  String get getTokenScreenTestButton => 'Test Key';
+
+  @override
+  String get runLocally => 'Run Locally';
 }

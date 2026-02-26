@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "Jess — the post-sex debrief chatbot backend",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test:sentry": "node -r dotenv/config tools/test_sentry.js"
+    "test:sentry": "node -r dotenv/config tools/test_sentry.js",
+    "test": "jest --detectOpenHandles"
   },
   "dependencies": {
     "hono": "^3.11.7",

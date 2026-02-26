@@ -243,6 +243,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re amazing!'**
   String get nagBubbleText;
+
+  /// No description provided for @getTokenScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup Local API Keys'**
+  String get getTokenScreenTitle;
+
+  /// No description provided for @getTokenScreenExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'To run this app locally, you need to provide your own API keys from DeepSeek and Google Cloud.'**
+  String get getTokenScreenExplanation;
+
+  /// No description provided for @getTokenScreenDeepSeekTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DeepSeek API Key'**
+  String get getTokenScreenDeepSeekTitle;
+
+  /// No description provided for @getTokenScreenGoogleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Cloud TTS API Key'**
+  String get getTokenScreenGoogleTitle;
+
+  /// No description provided for @getTokenScreenConsoleButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Get key from console'**
+  String get getTokenScreenConsoleButton;
+
+  /// No description provided for @getTokenScreenHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key here'**
+  String get getTokenScreenHintText;
+
+  /// No description provided for @getTokenScreenTestButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Key'**
+  String get getTokenScreenTestButton;
+
+  /// No description provided for @runLocally.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Locally'**
+  String get runLocally;
 }
 
 class _AppLocalizationsDelegate

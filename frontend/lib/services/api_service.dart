@@ -7,26 +7,40 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shedidthat/services/api_exceptions.dart';
 import 'package:shedidthat/services/device_service.dart';
+import 'package:shedidthat/services/storage_service.dart';
 
 import '../models/message.dart';
 
 class ApiService {
+  static final StorageService _storageService = StorageService();
+
   static const String _prodBaseUrl = 'https://api.shedidthat.app';
   // Use the DEV_IP from the environment for local development.
   static const String _devIp = String.fromEnvironment('DEV_IP', defaultValue: '127.0.0.1');
-  static final String _localBaseUrl = 'http://$_devIp:8788';
+  static final String _localBaseUrl = 'http://$_devIp:8789';
+  static final String _wranglerBaseUrl = 'http://$_devIp:8788';
+
+  static Future<String> getBaseUrl() async {
+    if (kDebugMode) {
+      final isLocalMode = await _storageService.getIsLocalMode();
+      return isLocalMode ? _localBaseUrl : _wranglerBaseUrl;
+    }
+    return _prodBaseUrl;
+  }
 
   static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
 
   static const String _appSecret = String.fromEnvironment('APP_SECRET');
 
-  static String getSpeechUrl(String speechPath) {
+  static Future<String> getSpeechUrl(String speechPath) async {
+    final baseUrl = await getBaseUrl();
     // The speechPath already contains the leading slash.
-    return '$_baseUrl$speechPath';
+    return '$baseUrl$speechPath';
   }
 
   static Future<void> triggerSentryTest() async {
-    final url = Uri.parse('$_baseUrl/sentrytest');
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse('$baseUrl/sentrytest');
     final deviceId = await DeviceService.getDeviceToken();
 
     if (_appSecret.isEmpty) {
@@ -54,6 +68,24 @@ class ApiService {
     }
   }
 
+  static Future<bool> validateDeepseekKey(String key) async {
+    final url = Uri.parse('https://api.deepseek.com/v1/models');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $key'},
+    );
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> validateGoogleTtsKey(String key) async {
+    final url = Uri.parse('https://texttospeech.googleapis.com/v1/voices');
+    final response = await http.get(
+      url,
+      headers: {'X-Goog-Api-Key': key},
+    );
+    return response.statusCode == 200;
+  }
+
   static Stream<String> chat(List<Message> messages, String deviceToken) async* {
     String lang = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
 
@@ -65,12 +97,14 @@ class ApiService {
       }
     }
 
-    final url = Uri.parse('$_baseUrl/chat?lang=$lang');
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse('$baseUrl/chat?lang=$lang');
     print('[ApiService] Sending chat request to $url');
 
     final client = http.Client();
     try {
       final request = http.Request('POST', url);
+      print('[ApiService] Using device ID for chat header: "$deviceToken"');
       request.headers.addAll({
         'Content-Type': 'application/json',
         'x-app-secret': _appSecret,

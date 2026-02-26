@@ -9,8 +9,24 @@ class StorageService {
   static const String _isLocalModeKey = 'isLocalMode';
   static const String _deepseekApiKey = 'DEEPSEEK_API_TOKEN';
   static const String _googleApiKey = 'GOOGLE_TEXT_API_KEY';
+  static const String _hasBeenRunBeforeKey = 'hasBeenRunBefore';
+
+  Future<bool> getHasBeenRunBefore() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasBeenRunBeforeKey) ?? false;
+  }
+
+  Future<void> setHasBeenRunBefore(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasBeenRunBeforeKey, value);
+  }
 
   Future<void> saveIsLocalMode(bool isLocalMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isLocalModeKey, isLocalMode);
+  }
+
+  Future<void> setIsLocalModeForTest(bool isLocalMode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isLocalModeKey, isLocalMode);
   }
@@ -46,6 +62,12 @@ class StorageService {
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  Future<void> clearApiKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_deepseekApiKey);
+    await prefs.remove(_googleApiKey);
   }
 
   // Conversation Management

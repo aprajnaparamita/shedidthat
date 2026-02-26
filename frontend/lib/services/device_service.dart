@@ -6,12 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-class DeviceService {
-  static const String _prodBaseUrl = 'https://api.shedidthat.app';
-  static const String _devIp = String.fromEnvironment('DEV_IP', defaultValue: '127.0.0.1');
-  static final String _localBaseUrl = 'http://$_devIp:8788';
+import 'package:shedidthat/services/api_service.dart';
 
-  static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
+class DeviceService {
 
   static const String _deviceIdKey = 'deviceId';
   static const String _isRegisteredKey = 'isDeviceRegistered';
@@ -44,7 +41,8 @@ class DeviceService {
 
   static Future<bool> registerDevice() async {
     final deviceId = await getDeviceToken();
-    final url = Uri.parse('$_baseUrl/register');
+    final baseUrl = await ApiService.getBaseUrl();
+    final url = Uri.parse('$baseUrl/register');
     print('[DeviceService] Attempting to register device at `$url`');
 
     try {
@@ -57,7 +55,7 @@ class DeviceService {
       if (response.statusCode == 200) {
         await markAsRegistered();
         print('[DeviceService] Device registered successfully.');
-        return true;
+      return true;
       } else {
         print('[DeviceService] Device registration failed with status: ${response.statusCode}, body: ${response.body}');
         return false;

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Simple chat",
+    "request": {
+      "path": "/chat",
+      "method": "POST",
+      "headers": {
+        "x-app-secret": "a-super-secret-key",
+        "x-device-id": "test-device"
+      },
+      "body": {
+        "messageHistory": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      }
+    },
+    "expected_stream_chunks": [
+      {"content": "Hello"},
+      {"content": "!"},
+      {"content": " How"},
+      {"content": " can"},
+      {"content": " I"},
+      {"content": " assist"},
+      {"content": " you"},
+      {"content": " today"},
+      {"content": "?"}
+    ],
+    "expected_final_chunk": {
+      "done": true,
+      "speechUrl_exists": true
+    }
+  },
+  {
+    "name": "Register device",
+    "request": {
+      "path": "/register",
+      "method": "POST",
+      "headers": {
+        "x-app-secret": "a-super-secret-key",
+        "x-device-id": "test-device-2"
+      },
+      "body": {
+        "deviceId": "test-device-2"
+      }
+    },
+    "expected_response": {
+      "status": 200,
+      "body": {
+        "status": "ok"
+      }
+    }
+  }
+]

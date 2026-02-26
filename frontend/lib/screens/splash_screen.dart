@@ -3,10 +3,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shedidthat/l10n/app_localizations.dart';
+import 'package:shedidthat/l10n/app_localizations.dart';
+import 'package:shedidthat/screens/get_token_screen.dart';
 import 'package:shedidthat/screens/home_screen.dart';
 import 'package:shedidthat/services/device_service.dart';
+import 'package:shedidthat/services/storage_service.dart';
 import 'package:shedidthat/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shedidthat/services/local_server_manager.dart';
 
 // Top-level class definition
 class NoGlowScrollBehavior extends ScrollBehavior {
@@ -26,25 +30,80 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final StorageService _storageService = StorageService();
   bool _isLoading = false;
+  bool _isLocalMode = false;
 
   @override
   void initState() {
     super.initState();
-    _triggerRegistration();
+    _loadInitialState();
   }
 
-  void _triggerRegistration() async {
-    if (!await DeviceService.isDeviceRegistered()) {
-      print('[SplashScreen] Device not registered. Triggering background registration.');
-      DeviceService.registerDevice(); // No await, let it run in the background
+  Widget _buildLocalModeToggle(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(AppLocalizations.of(context)!.runLocally, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 8),
+        Switch(
+          value: _isLocalMode,
+          onChanged: (value) {
+                    setState(() {
+                      _isLocalMode = value;
+                    });
+                    _storageService.saveIsLocalMode(value);
+                    if (!value) {
+                      _storageService.clearApiKeys();
+                    }
+                  },
+        ),
+      ],
+    );
+  }
+
+
+
+  void _loadInitialState() async {
+    final isLocal = await _storageService.getIsLocalMode();
+    if (mounted) {
+      setState(() {
+        _isLocalMode = isLocal;
+      });
     }
   }
+
 
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri)) {
       throw Exception('Could not launch $url');
+    }
+  }
+
+  Future<void> _getStarted() async {
+    if (_isLocalMode) {
+      final deepseekKey = await _storageService.getDeepseekApiKey();
+      final googleKey = await _storageService.getGoogleApiKey();
+      if (deepseekKey == null || googleKey == null) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const GetTokenScreen()),
+          );
+        }
+        return; // Stop execution if we navigate to token screen
+      }
+    } else {
+      // For production mode, register the device before proceeding.
+      await DeviceService.registerDevice();
+    }
+
+    // If all checks pass, navigate to home screen
+    if (mounted) {
+      await _storageService.setHasBeenRunBefore(true);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     }
   }
 
@@ -59,26 +118,20 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
       onPressed: _isLoading
           ? null
-          : () {
+          : () async {
               setState(() {
                 _isLoading = true;
               });
-              // Wait for registration to complete before navigating
-              DeviceService.registerDevice().then((_) {
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                }
-              }).catchError((error) {
-                // Handle registration error if necessary
-                print("Registration failed: $error");
+              try {
+                await _getStarted();
+              } catch (e) {
+                print("Get Started failed: $e");
                 if (mounted) {
                   setState(() {
                     _isLoading = false;
                   });
                 }
-              });
+              }
             },
       child: _isLoading
           ? const CircularProgressIndicator(
@@ -173,7 +226,9 @@ class _SplashScreenState extends State<SplashScreen> {
                       'darabuilds.tech/dating',
                       'https://darabuilds.tech/dating',
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    _buildLocalModeToggle(context),
+                    const SizedBox(height: 24),
                     _buildGetStartedButton(context),
                     const SizedBox(height: 40),
                   ],
@@ -272,6 +327,8 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
     );
   }
+
+
 }
 
 class BubbleTailPainter extends CustomPainter {
