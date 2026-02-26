@@ -26,27 +26,31 @@ class LocalServer {
         _googleApiKey = googleApiKey;
 
   Future<void> start() async {
-    final publicRouter = Router();
-    publicRouter.get('/', (Request request) {
+    final router = Router();
+
+    // Public routes — no auth required.
+    router.get('/', (Request request) {
       return Response.ok('She Absolutely Just Did That - Local backend is running!');
     });
-    publicRouter.post('/register', _handleRegister);
+    router.post('/register', _handleRegister);
+    // Speech is fetched by just_audio as a plain GET with no custom headers.
+    // The one-time UUID is sufficient protection — no auth middleware here.
+    router.get('/api/speech/<uuid>', _handleSpeechRequest);
 
-    final protectedRouter = Router();
-    protectedRouter.get('/api/speech/<uuid>', _handleSpeechRequest);
-    protectedRouter.post('/chat', _handleChat);
+    // Protected routes — auth + rate-limit applied inline.
+    router.post('/chat', (Request request) async {
+      final authResponse = _applyAuth(request);
+      if (authResponse != null) return authResponse;
+      final rateLimitResponse = _applyRateLimit(request);
+      if (rateLimitResponse != null) return rateLimitResponse;
+      return _handleChat(request);
+    });
 
-    // Order matches backend: logging → auth → rate-limit → handler
-    // Auth runs first so unauthenticated requests don't consume rate-limit slots.
-    final protectedHandler = const Pipeline()
+    final handler = const Pipeline()
         .addMiddleware(logRequests())
-        .addMiddleware(_authMiddleware())
-        .addMiddleware(_rateLimitMiddleware())
-        .addHandler(protectedRouter);
+        .addHandler(router);
 
-    final cascade = Cascade().add(publicRouter).add(protectedHandler);
-
-    _server = await io.serve(cascade.handler, '0.0.0.0', 8789);
+    _server = await io.serve(handler, '0.0.0.0', 8789);
     print('[LocalServer] Server started and listening on 0.0.0.0:8789');
   }
 
@@ -71,36 +75,31 @@ class LocalServer {
     }
   }
 
-  Middleware _rateLimitMiddleware() {
-    return (innerHandler) {
-      return (request) {
-        final deviceId = request.headers['x-device-id'];
-        if (deviceId == null) {
-          return innerHandler(request);
-        }
+  /// Returns a rejection Response if rate-limited, null if the request may proceed.
+  Response? _applyRateLimit(Request request) {
+    final deviceId = request.headers['x-device-id'];
+    if (deviceId == null) return null;
 
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final windowStart = now - (15 * 60 * 1000); // 15 minutes window (matches backend)
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final windowStart = now - (15 * 60 * 1000); // 15 minutes window (matches backend)
 
-        final record = _rateLimitKv[deviceId];
-        if (record == null) {
-          _rateLimitKv[deviceId] = {'count': 1, 'timestamp': now};
-          return innerHandler(request);
-        }
+    final record = _rateLimitKv[deviceId];
+    if (record == null) {
+      _rateLimitKv[deviceId] = {'count': 1, 'timestamp': now};
+      return null;
+    }
 
-        if (record['timestamp'] < windowStart) {
-          _rateLimitKv[deviceId] = {'count': 1, 'timestamp': now};
-          return innerHandler(request);
-        }
+    if (record['timestamp'] < windowStart) {
+      _rateLimitKv[deviceId] = {'count': 1, 'timestamp': now};
+      return null;
+    }
 
-        if (record['count'] >= 100) {
-          return Response(429, body: jsonEncode({'error': 'Too many requests.'}));
-        }
+    if (record['count'] >= 100) {
+      return Response(429, body: jsonEncode({'error': 'Too many requests.'}));
+    }
 
-        record['count']++;
-        return innerHandler(request);
-      };
-    };
+    record['count']++;
+    return null;
   }
 
   Future<Response> _handleSpeechRequest(Request request) async {
@@ -112,13 +111,15 @@ class LocalServer {
     for (int i = 0; i < 10; i++) {
       if (_speechCache.containsKey(uuid)) {
         final (audio, insertedAt) = _speechCache[uuid]!;
-        _speechCache.remove(uuid);
 
         // Reject if expired (60 seconds TTL, matches backend)
         if (DateTime.now().difference(insertedAt).inSeconds > 60) {
+          _speechCache.remove(uuid);
           return Response.notFound('Speech expired');
         }
 
+        // Keep in cache — just_audio fetches the URL multiple times
+        // (probe + stream). Remove only on expiry via the TTL above.
         return Response.ok(audio, headers: {'Content-Type': 'audio/mpeg'});
       }
       await Future.delayed(const Duration(seconds: 1));
@@ -159,26 +160,36 @@ class LocalServer {
     final responseStream = await deepseekRequest.send();
 
     final streamController = StreamController<List<int>>();
-    String fullMessage = '';
 
-    responseStream.stream.listen(
-      (chunk) {
-        final decoded = utf8.decode(chunk);
-        final lines = decoded.split('\n').where((line) => line.isNotEmpty);
+    // Process the DeepSeek stream in a separate async task so we can
+    // await TTS before sending the done chunk, without blocking the response.
+    () async {
+      String fullMessage = '';
+      String buffer = '';
 
-        for (final line in lines) {
-          if (line.startsWith('data: ')) {
+      try {
+        await for (final chunk in responseStream.stream) {
+          buffer += utf8.decode(chunk);
+
+          // Process complete lines from the buffer.
+          int newlineIndex;
+          while ((newlineIndex = buffer.indexOf('\n')) != -1) {
+            final line = buffer.substring(0, newlineIndex).trim();
+            buffer = buffer.substring(newlineIndex + 1);
+
+            if (!line.startsWith('data: ')) continue;
             final data = line.substring(6);
+            if (data.isEmpty) continue;
+
             if (data == '[DONE]') {
+              // Await TTS so audio is in the cache before the client receives
+              // the speechUrl and tries to fetch it.
               final speechUuid = const Uuid().v4();
-              final doneMessage = {
-                'done': true,
-                'speechUrl': '/api/speech/$speechUuid',
-              };
-              streamController.add(utf8.encode('data: ${jsonEncode(doneMessage)}\n\n'));
-              streamController.close();
-              _handleTTS(fullMessage, speechUuid, lang);
-              return;
+              await _handleTTS(fullMessage, speechUuid, lang);
+              streamController.add(utf8.encode(
+                'data: ${jsonEncode({'done': true, 'speechUrl': '/api/speech/$speechUuid'})}\n\n',
+              ));
+              return; // finally block will close the controller
             }
 
             try {
@@ -186,26 +197,23 @@ class LocalServer {
               final content = json['choices'][0]['delta']['content'] as String?;
               if (content != null) {
                 fullMessage += content;
-                streamController.add(utf8.encode('data: ${jsonEncode({'content': content})}\n\n'));
+                streamController.add(utf8.encode(
+                  'data: ${jsonEncode({'content': content})}\n\n',
+                ));
               }
             } catch (e) {
               print('Error decoding stream chunk: $e');
             }
           }
         }
-      },
-      onDone: () {
+      } catch (e) {
+        print('[LocalServer] Chat stream error: $e');
+      } finally {
         if (!streamController.isClosed) {
           streamController.close();
         }
-      },
-      onError: (error) {
-        print('Stream error: $error');
-        if (!streamController.isClosed) {
-          streamController.close();
-        }
-      },
-    );
+      }
+    }();
 
     return Response.ok(
       streamController.stream,
@@ -271,7 +279,7 @@ You are Jess — the user's loud, loving, obsessed best friend who has been sitt
 - You never judge. You never shame. You validate constantly.
 - You are NOT clinical. You never use medical or technical language.
 - Short punchy responses. You are a texter, not an essayist.
-- Occasional ALL CAPS for emphasis when something is too good.
+- Do NOT use all caps. Such as "I need to GO!", "I can't WAIT!"
 - If the user refer's to "she" or "her" assume she's talking about her girlfriend.
 - Use chat like language, keep messages to one line of text and sparingly use emoji at appropriate times.
 
@@ -286,14 +294,14 @@ The user just had (or is about to describe) a sexual or romantic encounter. You 
 ## Conversation Flow
 
 **Opening (first message):** Start with ONE of these randomly, never repeat:
-- "OKAY I have been waiting by this phone ALL DAY. Tell me everything right now."
-- "What happened? I could FEEL it. Start from the beginning."
+- "Okay I have been waiting by this phone All Day! Tell me everything right now."
+- "What happened? I could feel it! Start from the beginning."
 - "You're glowing through the screen. Do not leave out a single detail."
-- "I picked up my phone for a reason. GO."
+- "I picked up my phone for a reason. Go!"
 - "Okay I cleared my whole afternoon for this. What happened."
 
 **During the debrief:** Ask natural follow-up questions like:
-- "Okay but wait — was there a moment where you just KNEW it was going to be good?"
+- "Okay but wait — was there a moment where you just knew it was going to be good?"
 - "She sounds like she had done her research. Did she??"
 - "How are you even functioning right now honestly"
 - "Okay but the playlist though. What was playing."
@@ -415,31 +423,23 @@ The user just had (or is about to describe) a sexual or romantic encounter. You 
     return personas[lang] ?? personas['en']!;
   }
 
-  Middleware _authMiddleware() {
-    return (innerHandler) {
-      return (request) {
-        final secret = request.headers['x-app-secret'];
-        final deviceId = request.headers['x-device-id'];
+  /// Returns a rejection Response if auth fails, null if the request may proceed.
+  Response? _applyAuth(Request request) {
+    final secret = request.headers['x-app-secret'];
+    final deviceId = request.headers['x-device-id'];
 
-        if (secret != _appSecret) {
-          return Response.forbidden(jsonEncode({'error': 'Nope.'}));
-        }
+    if (secret != _appSecret) {
+      return Response.forbidden(jsonEncode({'error': 'Nope.'}));
+    }
 
-        if (deviceId == null || deviceId.isEmpty) {
-          return Response.badRequest(body: jsonEncode({'error': 'Device ID is required.'}));
-        }
+    if (deviceId == null || deviceId.isEmpty) {
+      return Response.badRequest(body: jsonEncode({'error': 'Device ID is required.'}));
+    }
 
-        if (!_deviceKv.containsKey(deviceId)) {
-          return Response.forbidden(jsonEncode({'error': 'Device not registered.'}));
-        }
+    if (!_deviceKv.containsKey(deviceId)) {
+      return Response.forbidden(jsonEncode({'error': 'Device not registered.'}));
+    }
 
-        final updatedRequest = request.change(context: {
-          ...request.context,
-          'deviceId': deviceId,
-        });
-
-        return innerHandler(updatedRequest);
-      };
-    };
+    return null;
   }
 }

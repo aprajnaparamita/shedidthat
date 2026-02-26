@@ -16,8 +16,8 @@ class LocalServerManager {
     required String googleApiKey,
   }) async {
     if (_serverIsolate != null) {
-      print('[LocalServerManager] Server is already running.');
-      return;
+      print('[LocalServerManager] Stopping existing server isolate before restart...');
+      stopServer();
     }
 
     print('[LocalServerManager] Spawning server isolate...');
