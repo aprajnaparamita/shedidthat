@@ -17,11 +17,18 @@ class LocalServerManager {
   }) async {
     if (_serverIsolate != null) {
       print('[LocalServerManager] Server is already running.');
-      return Future.value();
+      return;
     }
 
     print('[LocalServerManager] Spawning server isolate...');
     final completer = Completer<void>();
+
+    // Timeout after 10 seconds if the server doesn't confirm startup.
+    Timer(const Duration(seconds: 10), () {
+      if (!completer.isCompleted) {
+        completer.completeError('Server startup timed out after 10 seconds');
+      }
+    });
 
     _receivePort = ReceivePort();
     _serverIsolate = await Isolate.spawn(
@@ -38,6 +45,11 @@ class LocalServerManager {
         print('[LocalServerManager] Received server started confirmation from isolate.');
         if (!completer.isCompleted) {
           completer.complete();
+        }
+      } else if (message is String && message.startsWith('error:')) {
+        print('[LocalServerManager] Server isolate reported error: $message');
+        if (!completer.isCompleted) {
+          completer.completeError(message);
         }
       }
     });

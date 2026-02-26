@@ -9,7 +9,7 @@
         "x-device-id": "test-device"
       },
       "body": {
-        "messageHistory": [
+        "messages": [
           {
             "role": "user",
             "content": "Hello"

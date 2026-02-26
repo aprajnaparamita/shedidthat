@@ -9,8 +9,7 @@ import '../widgets/conversation_card.dart';
 import '../widgets/empty_state.dart';
 import 'chat_screen.dart';
 
-import 'package:shedidthat/services/local_server_manager.dart';
-import 'package:shedidthat/services/device_service.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,32 +31,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initialize() async {
-    await _initServer();
-    await _loadConversations();
-  }
-
-  Future<void> _initServer() async {
-    print('[HomeScreen] Initializing server...');
+    // Server is started in main.dart before HomeScreen is shown.
+    // We only need to load the local-mode flag and conversations here.
     final isLocal = await _storageService.getIsLocalMode();
-    setState(() {
-      _isLocalMode = isLocal;
-    });
-
-    if (isLocal) {
-      print('[HomeScreen] Local mode detected. Starting local server...');
-      final deepseekApiKey = await _storageService.getDeepseekApiKey();
-      final googleApiKey = await _storageService.getGoogleApiKey();
-      if (deepseekApiKey != null && googleApiKey != null) {
-        print('[HomeScreen] Waiting for local server to confirm startup...');
-        await LocalServerManager().startServer(
-          deepseekApiKey: deepseekApiKey,
-          googleApiKey: googleApiKey,
-        );
-        print('[HomeScreen] Local server started. Registering device...');
-        await DeviceService.registerDevice();
-        print('[HomeScreen] Device registration complete.');
-      }
+    if (mounted) {
+      setState(() {
+        _isLocalMode = isLocal;
+      });
     }
+    await _loadConversations();
   }
 
   Future<void> _loadConversations() async {

@@ -154,6 +154,17 @@ class _GetTokenScreenState extends State<GetTokenScreen> {
       google: _googleController.text,
     );
 
+    // Start the local server now that we have keys (first-run path).
+    // main.dart's startup block only runs when hasBeenRun is already true,
+    // so we must start it here before setting that flag.
+    await LocalServerManager().startServer(
+      deepseekApiKey: _deepseekController.text,
+      googleApiKey: _googleController.text,
+    );
+    await DeviceService.registerDevice();
+
+    await _storageService.setHasBeenRunBefore(true);
+
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),

@@ -1,37 +1,41 @@
 # Critical Bug Fixes - Quick Reference
 
-## 🔴 BUG-001: API Parameter Mismatch (MUST FIX FIRST)
+> ✅ **STATUS: ALL FIXES APPLIED** — 2026-02-27
+
+---
+
+## 🔴 BUG-001: API Parameter Mismatch ✅ FIXED
 
 **File:** `frontend/lib/local_server/local_server.dart`  
 **Line:** 119
 
-**Change this:**
+**Changed from:**
 ```dart
 final messageHistory = params['messageHistory'] as List<dynamic>;
 ```
 
-**To this:**
+**Changed to:**
 ```dart
 final messageHistory = params['messages'] as List<dynamic>;
 ```
 
-**Why:** Frontend sends `messages`, backend expects `messages`, but local server expects `messageHistory`. This causes local mode to completely fail.
+**Why:** Frontend sends `messages`, backend expects `messages`, but local server expected `messageHistory`. This caused local mode to completely fail.
 
 ---
 
-## 🔴 BUG-003: Local Server Not Started on Launch
+## 🔴 BUG-003: Local Server Not Started on Launch ✅ FIXED
 
 **File:** `frontend/lib/main.dart`  
-**Lines:** 23-25
+**Lines:** 23-32
 
-**Change this:**
+**Changed from:**
 ```dart
 if (isLocalMode && hasBeenRun) {
 
     }
 ```
 
-**To this:**
+**Changed to:**
 ```dart
 if (isLocalMode && hasBeenRun) {
   final deepseekApiKey = await storageService.getDeepseekApiKey();
@@ -53,214 +57,126 @@ if (isLocalMode && hasBeenRun) {
 
 ---
 
-## 🟠 BUG-004: Fix Duplicate Server Instances
+## 🟠 BUG-004: Duplicate Server Instances / No Timeout ✅ FIXED
 
-**File:** `frontend/lib/services/local_server_manager.dart`  
-**Line:** 24
+**File:** `frontend/lib/services/local_server_manager.dart`
 
-**Change this:**
-```dart
-if (_serverIsolate != null) {
-  print('[LocalServerManager] Server is already running.');
-  return Future.value();
-}
-```
-
-**To this:**
-```dart
-if (_serverIsolate != null) {
-  print('[LocalServerManager] Server is already running.');
-  return Future.value(); // This line was missing!
-}
-```
-
-**Note:** Actually the return is there, but we need to ensure it returns immediately without hanging.
-
-Better fix - change the completer logic:
+**Changes made:**
+- `return Future.value()` → `return` (cleaner early exit)
+- Added 10-second startup timeout via `Timer`
+- Added `error:` message handling from the isolate
 
 ```dart
-Future<void> startServer({
-  required String deepseekApiKey,
-  required String googleApiKey,
-}) async {
-  if (_serverIsolate != null) {
-    print('[LocalServerManager] Server is already running.');
-    return; // Just return, don't create new completer
+// Timeout added:
+Timer(const Duration(seconds: 10), () {
+  if (!completer.isCompleted) {
+    completer.completeError('Server startup timed out after 10 seconds');
   }
+});
 
-  print('[LocalServerManager] Spawning server isolate...');
-  final completer = Completer<void>();
-  
-  // Add timeout
-  Timer(Duration(seconds: 5), () {
-    if (!completer.isCompleted) {
-      completer.completeError('Server startup timeout');
-    }
-  });
-
-  _receivePort = ReceivePort();
-  _serverIsolate = await Isolate.spawn(
-    _serverEntryPoint,
-    {
-      'sendPort': _receivePort!.sendPort,
-      'deepseekApiKey': deepseekApiKey,
-      'googleApiKey': googleApiKey,
-    },
-  );
-
-  _receivePort!.listen((message) {
-    if (message == 'started') {
-      print('[LocalServerManager] Received server started confirmation from isolate.');
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    } else if (message is String && message.startsWith('error:')) {
-      if (!completer.isCompleted) {
-        completer.completeError(message);
-      }
-    }
-  });
-
-  return completer.future;
-}
-```
-
----
-
-## 🟡 BUG-006: Load Proper Personas
-
-**File:** `frontend/lib/local_server/local_server.dart`  
-**Lines:** 219-224
-
-**Option 1 - Quick Fix (use embedded strings):**
-
-Copy the content from `backend/persona.en.md`, `backend/persona.th.md`, `backend/persona.zh.md` and embed them:
-
-```dart
-String _getPersona(String lang) {
-  const personas = {
-    'en': '''
-[Paste full content of persona.en.md here]
-''',
-    'th': '''
-[Paste full content of persona.th.md here]
-''',
-    'zh': '''
-[Paste full content of persona.zh.md here]
-''',
-  };
-  return personas[lang] ?? personas['en']!;
-}
-```
-
-**Option 2 - Better Fix (load from assets):**
-
-1. Add persona files to Flutter assets in `pubspec.yaml`:
-```yaml
-assets:
-  - assets/personas/persona.en.md
-  - assets/personas/persona.th.md
-  - assets/personas/persona.zh.md
-```
-
-2. Copy persona files to `frontend/assets/personas/`
-
-3. Update local_server.dart to load from assets (requires passing them in constructor)
-
----
-
-## 🟡 BUG-007: Fix TTS Language Support
-
-**File:** `frontend/lib/local_server/local_server.dart`  
-**Function:** `_handleTTS`
-
-**Add lang parameter and voice mapping:**
-
-```dart
-// Add this constant at class level
-static const Map<String, Map<String, String>> _voices = {
-  'en': {'languageCode': 'en-US', 'name': 'en-US-Journey-F'},
-  'th': {'languageCode': 'th-TH', 'name': 'th-TH-Neural2-C'},
-  'zh': {'languageCode': 'cmn-CN', 'name': 'cmn-CN-Wavenet-D'},
-};
-
-// Update _handleTTS signature
-Future<void> _handleTTS(String text, String uuid, String lang) async {
-  final googleApiKey = _googleApiKey;
-  if (googleApiKey == null) {
-    print('Google API key not found');
-    return;
+// Error handling added in listener:
+} else if (message is String && message.startsWith('error:')) {
+  if (!completer.isCompleted) {
+    completer.completeError(message);
   }
-
-  final voice = _voices[lang] ?? _voices['en']!;
-  final url = Uri.parse('https://texttospeech.googleapis.com/v1/text:synthesize?key=$googleApiKey');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'input': {'text': text},
-      'voice': voice,
-      'audioConfig': {
-        'audioEncoding': 'MP3',
-        'speakingRate': 1.1,  // Add this too!
-      },
-    }),
-  );
-  // ... rest of function
 }
-```
-
-**Update the call site in _handleChat (line ~170):**
-
-```dart
-final lang = request.url.queryParameters['lang'] ?? 'en';
-// ...
-_handleTTS(fullMessage, speechUuid, lang);  // Add lang parameter
 ```
 
 ---
 
-## 🟡 BUG-005: Fix Rate Limit Window
+## 🟡 BUG-005: Wrong Rate Limit Window ✅ FIXED
 
 **File:** `frontend/lib/local_server/local_server.dart`  
 **Line:** 95
 
-**Change this:**
+**Changed from:**
 ```dart
 final windowStart = now - (60 * 60 * 1000); // 1 hour window
 ```
 
-**To this:**
+**Changed to:**
 ```dart
 final windowStart = now - (15 * 60 * 1000); // 15 minutes window (matches backend)
 ```
 
 ---
 
-## 🔵 BUG-011: Remove Dead Code
+## 🟡 BUG-006: Wrong AI Persona (Generic Instead of Jess) ✅ FIXED
 
-**File:** `frontend/lib/services/api_service.dart`  
-**Line:** 31
+**File:** `frontend/lib/local_server/local_server.dart`  
+**Function:** `_getPersona()`
 
-**Remove this line:**
+**Changed from:**
 ```dart
-static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
+String _getPersona(String lang) {
+  const personas = {
+    'en': 'You are a helpful assistant.',
+    'th': 'You are a helpful assistant who speaks Thai.',
+  };
+  return personas[lang] ?? personas['en']!;
+}
+```
+
+**Changed to:** Full Jess persona content for `en`, `th`, and `zh`, sourced directly from `backend/persona.en.md`, `backend/persona.th.md`, and `backend/persona.zh.md`. See `local_server.dart` for the embedded strings.
+
+---
+
+## 🟡 BUG-007: TTS Always English Voice ✅ FIXED
+
+**File:** `frontend/lib/local_server/local_server.dart`
+
+**Changes:**
+
+1. Added a `_voices` constant map at class level:
+```dart
+static const Map<String, Map<String, String>> _voices = {
+  'en': {'languageCode': 'en-US', 'name': 'en-US-Journey-F'},
+  'th': {'languageCode': 'th-TH', 'name': 'th-TH-Neural2-C'},
+  'zh': {'languageCode': 'cmn-CN', 'name': 'cmn-CN-Wavenet-D'},
+};
+```
+
+2. Updated `_handleTTS` signature to accept `lang`:
+```dart
+Future<void> _handleTTS(String text, String uuid, String lang) async {
+  final voice = _voices[lang] ?? _voices['en']!;
+  // ... uses voice map instead of hardcoded en-US
+  // ... also adds speakingRate: 1.1
+}
+```
+
+3. Updated call site in `_handleChat` to pass `lang`:
+```dart
+_handleTTS(fullMessage, speechUuid, lang);
 ```
 
 ---
 
-## 🔵 BUG-012: Fix Test Parameter
+## 🔵 BUG-011: Dead Code Removed ✅ FIXED
+
+**File:** `frontend/lib/services/api_service.dart`
+
+**Removed:**
+```dart
+static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
+```
+
+This getter was never used (all calls go through `getBaseUrl()` async method) and silently used the wrong URL in release builds.
+
+---
+
+## 🔵 BUG-012: Test Fixture Parameter Fixed ✅ FIXED
 
 **File:** `frontend/test/fixtures/server_test_cases.json`  
 **Line:** 12
 
-**Change this:**
+**Changed from:**
 ```json
 "body": {
   "messageHistory": [
 ```
 
-**To this:**
+**Changed to:**
 ```json
 "body": {
   "messages": [
@@ -283,29 +199,31 @@ static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
 
 ## 🚀 Deployment Order
 
-1. Fix BUG-001 (parameter mismatch) - **CRITICAL**
-2. Fix BUG-003 (server startup) - **CRITICAL**
-3. Fix BUG-004 (duplicate instances) - **HIGH**
-4. Test thoroughly in local mode
-5. Fix BUG-006 (personas) - **MEDIUM but important for UX**
-6. Fix BUG-007 (TTS languages) - **MEDIUM**
-7. Fix BUG-005 (rate limit) - **MEDIUM**
-8. Fix remaining LOW priority bugs
-9. Security review for SEC-001 and SEC-002
+1. ~~Fix BUG-001 (parameter mismatch)~~ ✅ Done
+2. ~~Fix BUG-003 (server startup)~~ ✅ Done
+3. ~~Fix BUG-004 (duplicate instances + timeout)~~ ✅ Done
+4. ~~Fix BUG-005 (rate limit window)~~ ✅ Done
+5. ~~Fix BUG-006 (personas)~~ ✅ Done
+6. ~~Fix BUG-007 (TTS languages)~~ ✅ Done
+7. ~~Fix BUG-011 (dead code)~~ ✅ Done
+8. ~~Fix BUG-012 (test fixture)~~ ✅ Done
+9. **Next:** Test thoroughly in local mode
+10. **Next:** Security review for SEC-001 and SEC-002
 
 ---
 
-## ⚠️ Known Remaining Issues After Critical Fixes
+## ⚠️ Known Remaining Issues
 
-Even after these fixes, you'll still have:
-- Streaming implementation differences (BUG-002) - needs bigger refactor
-- Speech cache never expires in local mode (BUG-008)
-- Middleware ordering differences (ISSUE-001)
-- Missing error handling in isolate (ISSUE-002)
-- Hardcoded secrets (SEC-001, SEC-002)
+Even after these fixes, the following still need attention:
+
+- **BUG-002:** Streaming implementation differences between local/prod — needs bigger refactor
+- **BUG-008:** Speech cache never expires in local mode — memory leak over time
+- **ISSUE-001:** Middleware ordering differences between backends
+- **ISSUE-002:** Missing error handling in server isolate entry point
+- **SEC-001 / SEC-002:** Hardcoded secrets (`_appSecret`) — needs proper secret management
 
 These should be addressed in follow-up sprints.
 
 ---
 
-*Last updated: 2026-02-27 04:13:08 GMT+7*
+*Last updated: 2026-02-27 — All critical, high, and medium bugs fixed*

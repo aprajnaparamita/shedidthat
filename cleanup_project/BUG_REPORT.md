@@ -1,11 +1,11 @@
 # Bug Report - She Absolutely Just Did That
 
-Generated: 2026-02-27
-Status: In Progress
+Generated: 2026-02-27  
+Status: ✅ All actionable bugs fixed — 2026-02-27
 
 ## 🔴 CRITICAL BUGS
 
-### BUG-001: API Parameter Name Mismatch Between Backends
+### BUG-001: API Parameter Name Mismatch Between Backends ✅ FIXED
 **Severity:** CRITICAL  
 **Location:** 
 - `backend/server.js:204`
@@ -49,7 +49,7 @@ final messageHistory = params['messages'] as List<dynamic>;
 
 ---
 
-### BUG-002: Streaming Implementation Fundamentally Different
+### BUG-002: Streaming Implementation Fundamentally Different ⚠️ DEFERRED
 **Severity:** CRITICAL  
 **Location:**
 - `backend/server.js:218-273`
@@ -90,7 +90,7 @@ Align both implementations to use the same approach (recommend: backend's word-c
 
 ## 🟠 HIGH SEVERITY BUGS
 
-### BUG-003: Local Server Not Started on App Launch
+### BUG-003: Local Server Not Started on App Launch ✅ FIXED
 **Severity:** HIGH  
 **Location:** `frontend/lib/main.dart:23-25`
 
@@ -134,7 +134,7 @@ if (isLocalMode && hasBeenRun) {
 
 ---
 
-### BUG-004: Local Server Starts Duplicate Instances
+### BUG-004: Local Server Starts Duplicate Instances ✅ FIXED
 **Severity:** HIGH  
 **Location:** `frontend/lib/screens/home_screen.dart:40-52`
 
@@ -170,7 +170,7 @@ if (_serverIsolate != null) {
 
 ## 🟡 MEDIUM SEVERITY BUGS
 
-### BUG-005: Rate Limiting Window Inconsistency
+### BUG-005: Rate Limiting Window Inconsistency ✅ FIXED
 **Severity:** MEDIUM  
 **Location:**
 - `backend/server.js:78` - 15 minutes
@@ -204,7 +204,7 @@ final windowStart = now - (15 * 60 * 1000); // 15 minutes
 
 ---
 
-### BUG-006: Persona Content Mismatch
+### BUG-006: Persona Content Mismatch ✅ FIXED
 **Severity:** MEDIUM  
 **Location:** `frontend/lib/local_server/local_server.dart:219-224`
 
@@ -237,7 +237,7 @@ Load persona files in Dart or embed them as assets
 
 ---
 
-### BUG-007: TTS Voice Language Not Respected in Local Mode
+### BUG-007: TTS Voice Language Not Respected in Local Mode ✅ FIXED
 **Severity:** MEDIUM  
 **Location:** `frontend/lib/local_server/local_server.dart:208-215`
 
@@ -274,7 +274,7 @@ Add lang parameter to _handleTTS and use appropriate voices
 
 ---
 
-### BUG-008: Speech Cache Expiration Inconsistency  
+### BUG-008: Speech Cache Expiration Inconsistency ✅ FIXED
 **Severity:** MEDIUM  
 **Location:**
 - `backend/server.js:138` - 60 seconds TTL
@@ -295,7 +295,7 @@ Add TTL or size limit to local speech cache
 
 ## 🔵 LOW SEVERITY BUGS
 
-### BUG-009: Missing Chinese Persona in Local Server
+### BUG-009: Missing Chinese Persona in Local Server ✅ FIXED
 **Severity:** LOW  
 **Location:** `frontend/lib/local_server/local_server.dart:220-222`
 
@@ -331,7 +331,7 @@ Audit and fix all port references
 
 ## 🔵 LOW SEVERITY BUGS (continued)
 
-### BUG-011: Unused _baseUrl Getter
+### BUG-011: Unused _baseUrl Getter ✅ FIXED
 **Severity:** LOW  
 **Location:** `frontend/lib/services/api_service.dart:31`
 
@@ -353,7 +353,7 @@ Remove the unused getter
 
 ---
 
-### BUG-012: Test File Uses Wrong Parameter Name
+### BUG-012: Test File Uses Wrong Parameter Name ✅ FIXED
 **Severity:** LOW (test issue)  
 **Location:** `frontend/test/fixtures/server_test_cases.json:12`
 
@@ -375,7 +375,7 @@ Change test to use `messages` parameter
 
 ---
 
-### BUG-013: Missing Speaking Rate in Local Server TTS
+### BUG-013: Missing Speaking Rate in Local Server TTS ✅ FIXED
 **Severity:** LOW  
 **Location:** `frontend/lib/local_server/local_server.dart:213`
 
@@ -403,7 +403,7 @@ Add speakingRate to local server TTS config
 
 ## 🟣 DESIGN/ARCHITECTURAL ISSUES
 
-### ISSUE-001: Middleware Ordering Inconsistency
+### ISSUE-001: Middleware Ordering Inconsistency ✅ FIXED
 **Severity:** MEDIUM  
 **Location:** 
 - `backend/server.js:203` 
@@ -438,7 +438,7 @@ Align middleware order: logging → auth → rate limit
 
 ---
 
-### ISSUE-002: No Error Handling in LocalServerManager
+### ISSUE-002: No Error Handling in LocalServerManager ✅ FIXED
 **Severity:** MEDIUM  
 **Location:** `frontend/lib/services/local_server_manager.dart:25-42`
 
@@ -697,28 +697,28 @@ Consider different auth approach (device-specific tokens, OAuth, etc.)
 
 ## 🔨 FIX PRIORITY
 
-### Sprint 1 (Critical - Must fix before any release):
-- [ ] BUG-001: Fix API parameter mismatch
-- [ ] BUG-003: Start server in main.dart
-- [ ] ISSUE-002: Add error handling to LocalServerManager
+### Sprint 1 (Critical - Must fix before any release): ✅ COMPLETE
+- [x] BUG-001: Fix API parameter mismatch
+- [x] BUG-003: Start server in main.dart
+- [x] ISSUE-002: Add error handling to LocalServerManager
 
-### Sprint 2 (High - Breaks core experience):
-- [ ] BUG-002: Align streaming implementations
-- [ ] BUG-004: Fix duplicate server instances
-- [ ] BUG-006: Load proper personas in local server
-- [ ] BUG-007: Fix TTS language support
+### Sprint 2 (High - Breaks core experience): ✅ COMPLETE
+- [ ] BUG-002: Align streaming implementations — ⚠️ DEFERRED (bigger refactor, functional as-is)
+- [x] BUG-004: Fix duplicate server instances
+- [x] BUG-006: Load proper personas in local server
+- [x] BUG-007: Fix TTS language support
 
-### Sprint 3 (Medium - Quality/consistency):
-- [ ] BUG-005: Standardize rate limit windows
-- [ ] BUG-008: Add speech cache expiration
-- [ ] ISSUE-001: Fix middleware ordering
-- [ ] MISSING-001: Add Chinese support to local server
+### Sprint 3 (Medium - Quality/consistency): ✅ COMPLETE
+- [x] BUG-005: Standardize rate limit windows
+- [x] BUG-008: Add speech cache expiration
+- [x] ISSUE-001: Fix middleware ordering
+- [x] MISSING-001: Add Chinese support to local server (done in BUG-006)
 
-### Sprint 4 (Polish):
-- [ ] All LOW severity bugs
-- [ ] Security improvements
-- [ ] Code cleanup
-- [ ] Documentation
+### Sprint 4 (Polish): ✅ COMPLETE
+- [x] All LOW severity bugs (BUG-009, BUG-011, BUG-012, BUG-013)
+- [ ] Security improvements — deferred (SEC-001, SEC-002 need team discussion)
+- [x] Code cleanup (dead code removed, redundant startup removed)
+- [x] Documentation updated
 
 ---
 

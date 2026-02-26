@@ -15,22 +15,30 @@ class ApiService {
   static final StorageService _storageService = StorageService();
 
   static const String _prodBaseUrl = 'https://api.shedidthat.app';
-  // Use the DEV_IP from the environment for local development.
+  static const String _localBaseUrl = 'http://127.0.0.1:8789';
   static const String _devIp = String.fromEnvironment('DEV_IP', defaultValue: '127.0.0.1');
-  static final String _localBaseUrl = 'http://$_devIp:8789';
   static final String _wranglerBaseUrl = 'http://$_devIp:8788';
 
+  /// Returns the base URL for all API calls.
+  /// - Local mode (user toggle)  → http://127.0.0.1:8789  (local Dart server, loopback)
+  /// - Non-local + debug build   → http://<DEV_IP>:8788    (wrangler, set DEV_IP at run time)
+  /// - Non-local + release / web → https://api.shedidthat.app (production)
   static Future<String> getBaseUrl() async {
-    if (kDebugMode) {
-      final isLocalMode = await _storageService.getIsLocalMode();
-      return isLocalMode ? _localBaseUrl : _wranglerBaseUrl;
-    }
+    final isLocalMode = await _storageService.getIsLocalMode();
+    if (isLocalMode) return _localBaseUrl;
+    if (kDebugMode) return _wranglerBaseUrl;
     return _prodBaseUrl;
   }
 
-  static String get _baseUrl => kDebugMode ? _localBaseUrl : _prodBaseUrl;
+  // In local mode the server uses a hardcoded secret (see local_server.dart).
+  // In production the secret must be supplied via --dart-define=APP_SECRET=...
+  static const String _localSecret = 'a-super-secret-key';
+  static const String _prodSecret = String.fromEnvironment('APP_SECRET');
 
-  static const String _appSecret = String.fromEnvironment('APP_SECRET');
+  static Future<String> _getAppSecret() async {
+    final isLocalMode = await _storageService.getIsLocalMode();
+    return isLocalMode ? _localSecret : _prodSecret;
+  }
 
   static Future<String> getSpeechUrl(String speechPath) async {
     final baseUrl = await getBaseUrl();
@@ -43,7 +51,8 @@ class ApiService {
     final url = Uri.parse('$baseUrl/sentrytest');
     final deviceId = await DeviceService.getDeviceToken();
 
-    if (_appSecret.isEmpty) {
+    final appSecret = await _getAppSecret();
+    if (appSecret.isEmpty) {
       print('APP_SECRET environment variable not set. Cannot trigger server error.');
       return;
     }
@@ -54,7 +63,7 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'x-device-id': deviceId,
-          'x-app-secret': _appSecret,
+          'x-app-secret': appSecret,
         },
       );
 
@@ -105,9 +114,10 @@ class ApiService {
     try {
       final request = http.Request('POST', url);
       print('[ApiService] Using device ID for chat header: "$deviceToken"');
+      final appSecret = await _getAppSecret();
       request.headers.addAll({
         'Content-Type': 'application/json',
-        'x-app-secret': _appSecret,
+        'x-app-secret': appSecret,
         'x-device-id': deviceToken,
       });
       request.body = jsonEncode({'messages': messages.map((m) => m.toJson()).toList()});

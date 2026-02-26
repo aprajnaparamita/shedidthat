@@ -24,8 +24,19 @@ void main() async {
     final hasBeenRun = await storageService.getHasBeenRunBefore();
 
     if (isLocalMode && hasBeenRun) {
-
-        }
+      final deepseekApiKey = await storageService.getDeepseekApiKey();
+      final googleApiKey = await storageService.getGoogleApiKey();
+      if (deepseekApiKey != null && googleApiKey != null) {
+        print('[Main] Starting local server...');
+        await LocalServerManager().startServer(
+          deepseekApiKey: deepseekApiKey,
+          googleApiKey: googleApiKey,
+        );
+        print('[Main] Registering device...');
+        await DeviceService.registerDevice();
+        print('[Main] Local server ready.');
+      }
+    }
 
     if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       await windowManager.ensureInitialized();
